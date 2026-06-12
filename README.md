@@ -16,7 +16,7 @@ Abra:
 http://localhost:8077/
 ```
 
-Os participantes acessam seus links individuais com token. A administração usa o token configurado em `data/admin.json`.
+Os participantes acessam seus links individuais com token. A administração é acessada diretamente pelo endereço `/admin`, sem token.
 
 Para abrir diretamente a página administrativa, acesse:
 
@@ -24,16 +24,13 @@ Para abrir diretamente a página administrativa, acesse:
 http://10.10.0.25:8077/admin
 ```
 
-No servidor Linux, configure porta, endereço dos convites e token administrativo ao iniciar:
+No servidor Linux, configure a porta e o endereço dos convites ao iniciar:
 
 ```bash
 PORT=8077 \
 APP_BASE_URL=http://10.10.0.25:8077 \
-ADMIN_ACCESS_TOKEN=2f503736c316fa1b72d685d232967ed4b8890d93581f86c4 \
 node server.js
 ```
-
-O arquivo `data/admin.json` é ignorado pelo Git. Portanto, no servidor, copie esse arquivo manualmente ou configure `ADMIN_ACCESS_TOKEN`.
 
 ## Regras implementadas
 

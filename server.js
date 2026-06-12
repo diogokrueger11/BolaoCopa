@@ -10,7 +10,6 @@ const DATA_DIR = path.join(__dirname, "data");
 const DB_FILE = path.join(DATA_DIR, "bets.json");
 const RESULTS_FILE = path.join(DATA_DIR, "results.json");
 const BITRIX_CONFIG_FILE = path.join(DATA_DIR, "bitrix-config.json");
-const ADMIN_FILE = path.join(DATA_DIR, "admin.json");
 const SPECIAL_DEADLINE = new Date("2026-06-16T02:59:59.999Z");
 const profileCache = new Map();
 let bitrixSyncPromise = null;
@@ -31,10 +30,6 @@ function send(res, status, body, type = "application/json; charset=utf-8") {
   res.writeHead(status, { "Content-Type": type, "Cache-Control": "no-store", "Referrer-Policy":"no-referrer" });
   res.end(type.startsWith("application/json") ? JSON.stringify(body) : body);
 }
-function redirect(res, location) {
-  res.writeHead(302, { "Location": location, "Cache-Control": "no-store", "Referrer-Policy":"no-referrer" });
-  res.end();
-}
 function receiveJson(req) {
   return new Promise((resolve, reject) => {
     let body = "";
@@ -50,17 +45,6 @@ function validToken(token) {
 }
 function createToken() {
   return crypto.randomBytes(24).toString("hex");
-}
-function readAdmin() {
-  const environmentToken = (process.env.ADMIN_ACCESS_TOKEN || "").trim().toLowerCase();
-  if (validToken(environmentToken)) return { name: process.env.ADMIN_NAME || "DCASH", accessToken: environmentToken };
-  const admin = readJson(ADMIN_FILE);
-  return validToken(admin.accessToken) ? admin : null;
-}
-function isAdminToken(token) {
-  const admin = readAdmin();
-  if (!admin || !validToken(token)) return false;
-  return crypto.timingSafeEqual(Buffer.from(admin.accessToken), Buffer.from(token));
 }
 function findByToken(db, token) {
   if (!validToken(token)) return null;
@@ -263,15 +247,12 @@ const MIME={".html":"text/html; charset=utf-8",".css":"text/css; charset=utf-8",
 const server=http.createServer(async(req,res)=>{
   const url=new URL(req.url,`http://${req.headers.host}`);
   if(url.pathname.toLowerCase()==="/admin"||url.pathname.toLowerCase()==="/admin/"){
-    const admin=readAdmin();
-    if(!admin)return send(res,503,"Acesso administrativo nao configurado.","text/plain; charset=utf-8");
-    return redirect(res,`/acessos.html?token=${encodeURIComponent(admin.accessToken)}`);
+    return send(res,200,fs.readFileSync(path.join(PUBLIC_DIR,"acessos.html")),"text/html; charset=utf-8");
   }
+  if(url.pathname==="/acessos.html")return send(res,404,"Não encontrado","text/plain; charset=utf-8");
   if(url.pathname==="/api/bets")return betsApi(req,res,url);
   if(url.pathname==="/api/profile"){
     const token=url.searchParams.get("token")||"";
-    const admin=isAdminToken(token)&&readAdmin();
-    if(admin)return send(res,200,{name:admin.name||"DCASH",photo:null,found:true,admin:true});
     const participant=findByToken(readJson(DB_FILE),token);
     if(!participant)return send(res,401,{error:"Token de acesso inválido."});
     return send(res,200,participant.record.profile||await getBitrixProfile(participant.email));
@@ -280,12 +261,10 @@ const server=http.createServer(async(req,res)=>{
     return send(res,200,await enrichRanking(calculateRanking(readJson(DB_FILE),readJson(RESULTS_FILE))));
   }
   if(url.pathname==="/api/sync-bitrix"&&req.method==="POST"){
-    if(!isAdminToken(url.searchParams.get("token")||""))return send(res,403,{error:"Acesso não autorizado."});
     try{return send(res,200,await syncBitrixUsers())}catch(error){return send(res,502,{error:error.message})}
   }
   if(url.pathname==="/api/access-links"){
     const db=readJson(DB_FILE);
-    if(!isAdminToken(url.searchParams.get("token")||""))return send(res,403,{error:"Acesso não autorizado."});
     const links=Object.values(db).map(record=>({
       name:record.profile?.name||"Participante",
       photo:record.profile?.photo||null,
@@ -298,7 +277,6 @@ const server=http.createServer(async(req,res)=>{
   }
   if(url.pathname==="/api/send-bitrix-invite"&&req.method==="POST"){
     const db=readJson(DB_FILE);
-    if(!isAdminToken(url.searchParams.get("token")||""))return send(res,403,{error:"Acesso não autorizado."});
     let input;try{input=await receiveJson(req)}catch{return send(res,400,{error:"Dados inválidos."})}
     const recipient=findByToken(db,input.recipientToken||"");
     if(!recipient)return send(res,404,{error:"Participante não encontrado."});
@@ -316,4 +294,4 @@ const server=http.createServer(async(req,res)=>{
   send(res,200,fs.readFileSync(file),MIME[path.extname(file)]||"application/octet-stream");
 });
 if(require.main===module)server.listen(PORT,()=>console.log(`Bolão disponível na porta ${PORT}`));
-module.exports={cleanMatchBets,validEmail,validToken,createToken,readAdmin,isAdminToken,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,APP_BASE_URL,calculateRanking,getBitrixProfile,listBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};
+module.exports={cleanMatchBets,validEmail,validToken,createToken,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,APP_BASE_URL,calculateRanking,getBitrixProfile,listBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};

@@ -7,15 +7,6 @@ test("usa o endereço oficial da rede interna", () => {
   assert.equal(APP_BASE_URL, "http://10.10.0.25:8077");
 });
 
-test("aceita token administrativo por variável de ambiente", () => {
-  const { isAdminToken } = require("../server");
-  const previous = process.env.ADMIN_ACCESS_TOKEN;
-  process.env.ADMIN_ACCESS_TOKEN = "a".repeat(48);
-  assert.equal(isAdminToken("a".repeat(48)), true);
-  if (previous === undefined) delete process.env.ADMIN_ACCESS_TOKEN;
-  else process.env.ADMIN_ACCESS_TOKEN = previous;
-});
-
 test("valida e-mail", () => {
   assert.equal(validEmail("pessoa@exemplo.com"), true);
   assert.equal(validEmail("invalido"), false);
@@ -52,58 +43,4 @@ test("perfil de fallback nao expoe e-mail", async () => {
   const { getBitrixProfile } = require("../server");
   const profile = await getBitrixProfile("invalido");
   assert.deepEqual(profile, { name:"Participante", photo:null, found:false });
-});
-
-test("sincronizacao Bitrix rejeita token invalido", async () => {
-  const { server } = require("../server");
-  await new Promise(resolve => server.listen(0, resolve));
-  const response = await fetch(`http://127.0.0.1:${server.address().port}/api/sync-bitrix?token=invalido`, { method:"POST" });
-  await new Promise(resolve => server.close(resolve));
-  assert.equal(response.status, 403);
-});
-
-test("envio Bitrix rejeita token administrativo invalido sem enviar", async () => {
-  const { server } = require("../server");
-  await new Promise(resolve => server.listen(0, resolve));
-  const response = await fetch(`http://127.0.0.1:${server.address().port}/api/send-bitrix-invite?token=invalido`, {
-    method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({})
-  });
-  await new Promise(resolve => server.close(resolve));
-  assert.equal(response.status, 403);
-});
-
-test("lista administrativa informa flag de envio", async () => {
-  const { server } = require("../server");
-  const token = require("../data/admin.json").accessToken;
-  await new Promise(resolve => server.listen(0, resolve));
-  const response = await fetch(`http://127.0.0.1:${server.address().port}/api/access-links?token=${token}`);
-  const data = await response.json();
-  await new Promise(resolve => server.close(resolve));
-  assert.equal(typeof data.links[0].sent, "boolean");
-  assert.ok(Object.hasOwn(data.links[0], "sentAt"));
-});
-
-test("token DCASH administra sem participar do ranking", async () => {
-  const { server } = require("../server");
-  const token = require("../data/admin.json").accessToken;
-  await new Promise(resolve => server.listen(0, resolve));
-  const base = `http://127.0.0.1:${server.address().port}`;
-  const profileResponse = await fetch(`${base}/api/profile?token=${token}`);
-  const profile = await profileResponse.json();
-  const betsResponse = await fetch(`${base}/api/bets?token=${token}`);
-  const rankingResponse = await fetch(`${base}/api/ranking`);
-  const ranking = await rankingResponse.json();
-  await new Promise(resolve => server.close(resolve));
-  assert.deepEqual(profile, { name:"DCASH", photo:null, found:true, admin:true });
-  assert.equal(betsResponse.status, 401);
-  assert.equal(ranking.ranking.some(row => row.profile?.name === "DCASH"), false);
-});
-
-test("token do Diogo não possui mais acesso administrativo", async () => {
-  const { server } = require("../server");
-  const token = require("../data/bets.json")["diogo.krueger@dcashcapital.com.br"].accessToken;
-  await new Promise(resolve => server.listen(0, resolve));
-  const response = await fetch(`http://127.0.0.1:${server.address().port}/api/access-links?token=${token}`);
-  await new Promise(resolve => server.close(resolve));
-  assert.equal(response.status, 403);
 });

@@ -1,4 +1,4 @@
-import{token,setupNav,toast,avatar,responseJson}from"./shared.js";
+import{setupNav,toast,avatar,responseJson}from"./shared.js";
 setupNav("access");
 const grid=document.querySelector("#users-grid");
 const formatDate=value=>value?new Intl.DateTimeFormat("pt-BR",{dateStyle:"short",timeStyle:"short"}).format(new Date(value)):"";
@@ -9,14 +9,14 @@ function card(item){
   </article>`;
 }
 function metrics(items){document.querySelector("#links-count").textContent=items.length;document.querySelector("#sent-count").textContent=items.filter(x=>x.sent).length;document.querySelector("#pending-count").textContent=items.filter(x=>!x.sent).length}
-fetch(`/api/access-links?token=${encodeURIComponent(token)}`).then(async response=>{
+fetch("/api/access-links").then(async response=>{
   const data=await responseJson(response);if(!response.ok)throw new Error(data.error);metrics(data.links);grid.innerHTML=data.links.map(card).join("");
 }).catch(error=>grid.innerHTML=`<div class="empty">${error.message}</div>`);
 grid.addEventListener("click",async event=>{
   const send=event.target.closest("[data-recipient]");if(!send)return;
   if(!confirm(`Enviar a mensagem individual para ${send.dataset.name} pelo chat do Bitrix?`))return;
   send.disabled=true;send.textContent="Enviando...";
-  const response=await fetch(`/api/send-bitrix-invite?token=${encodeURIComponent(token)}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({recipientToken:send.dataset.recipient})});
+  const response=await fetch("/api/send-bitrix-invite",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({recipientToken:send.dataset.recipient})});
   const data=await responseJson(response);
   if(!response.ok){send.disabled=false;send.textContent="Enviar mensagem";return toast(data.error)}
   const cardEl=send.closest("[data-card]"),wasSent=cardEl.dataset.sent==="true";cardEl.dataset.sent="true";cardEl.classList.remove("pending");cardEl.classList.add("sent");cardEl.querySelector(".invite-status").className="invite-status status-sent";cardEl.querySelector(".invite-status").textContent="Mensagem enviada";cardEl.querySelector("small").textContent=`Enviada em ${formatDate(data.sentAt)}`;send.disabled=false;send.textContent="Reenviar mensagem";

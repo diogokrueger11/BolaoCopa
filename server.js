@@ -48,18 +48,8 @@ function createToken() {
   return crypto.randomBytes(24).toString("hex");
 }
 function buildGameKickoffs() {
-  const groups={B:["Canada","Bosnia","Catar","Suica"],C:["Brasil","Marrocos","Haiti","Escocia"],D:["Estados Unidos","Paraguai","Australia","Turquia"],E:["Alemanha","Curacao","Costa do Marfim","Equador"],F:["Holanda","Japao","Suecia","Tunisia"],G:["Belgica","Egito","Ira","Nova Zelandia"],H:["Espanha","Cabo Verde","Arabia Saudita","Uruguai"],I:["Franca","Senegal","Iraque","Noruega"],J:["Argentina","Argelia","Austria","Jordania"],K:["Portugal","Congo RD","Uzbequistao","Colombia"],L:["Inglaterra","Croacia","Gana","Panama"]};
-  const dates=[
-    {B:"2026-06-13",C:"2026-06-13",D:"2026-06-13",E:"2026-06-14",F:"2026-06-14",G:"2026-06-15",H:"2026-06-15",I:"2026-06-16",J:"2026-06-16",K:"2026-06-17",L:"2026-06-17"},
-    {B:"2026-06-18",C:"2026-06-19",D:"2026-06-19",E:"2026-06-20",F:"2026-06-20",G:"2026-06-21",H:"2026-06-21",I:"2026-06-22",J:"2026-06-22",K:"2026-06-23",L:"2026-06-23"},
-    {B:"2026-06-24",C:"2026-06-24",D:"2026-06-25",E:"2026-06-25",F:"2026-06-25",G:"2026-06-26",H:"2026-06-26",I:"2026-06-26",J:"2026-06-27",K:"2026-06-27",L:"2026-06-27"}
-  ];
-  const games={"D-USA-PAR":"2026-06-13T01:00:00.000Z"};
-  Object.entries(groups).forEach(([group,teams])=>[[[2,3],[0,1]],[[0,2],[3,1]],[[3,0],[1,2]]].forEach((pairs,round)=>pairs.forEach((pair,index)=>{
-    const home=teams[pair[0]],away=teams[pair[1]],excluded=(group==="B"&&home==="Canada"&&away==="Bosnia")||(group==="D"&&home==="Estados Unidos"&&away==="Paraguai");
-    if(!excluded)games[`${group}-${home}-${away}`.replaceAll(" ","-")]=`${dates[round][group]}T${index?"22":"16"}:00:00.000Z`;
-  })));
-  return games;
+  const schedule = readJson(path.join(PUBLIC_DIR, "schedule.json"));
+  return Object.fromEntries(schedule.map(game => [game.id, game.kickoff]));
 }
 function findByToken(db, token) {
   if (!validToken(token)) return null;

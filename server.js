@@ -3,7 +3,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
 
-const PORT = process.env.PORT || 8077;
+const PORT = process.env.PORT || 3000;
+const APP_BASE_URL = process.env.APP_BASE_URL || "http://10.10.0.25:8077";
 const PUBLIC_DIR = path.join(__dirname, "public");
 const DATA_DIR = path.join(__dirname, "data");
 const DB_FILE = path.join(DATA_DIR, "bets.json");
@@ -101,10 +102,10 @@ function calculateRanking(bets, results) {
 function bitrixWebhookUrl() {
   return process.env.BITRIX_WEBHOOK_URL || readJson(BITRIX_CONFIG_FILE).webhookUrl || "";
 }
-async function sendBitrixInvite(record, baseUrl) {
+async function sendBitrixInvite(record, baseUrl = APP_BASE_URL) {
   if (!record?.profile?.bitrixId || !validToken(record.accessToken)) throw new Error("Participante sem usuário Bitrix.");
   let origin;
-  try { origin = new URL(baseUrl).origin; } catch { throw new Error("Endereço do bolão inválido."); }
+  try { origin = new URL(APP_BASE_URL || baseUrl).origin; } catch { throw new Error("Endereço do bolão inválido."); }
   const webhook = bitrixWebhookUrl();
   if (!webhook) throw new Error("Webhook Bitrix não configurado.");
   const name = record.profile.name || "Participante";
@@ -303,5 +304,5 @@ const server=http.createServer(async(req,res)=>{
   if(!file.startsWith(PUBLIC_DIR)||!fs.existsSync(file)||fs.statSync(file).isDirectory())return send(res,404,"Não encontrado","text/plain; charset=utf-8");
   send(res,200,fs.readFileSync(file),MIME[path.extname(file)]||"application/octet-stream");
 });
-if(require.main===module)server.listen(PORT,()=>console.log(`Bolão disponível em http://localhost:${PORT}`));
-module.exports={cleanMatchBets,validEmail,validToken,createToken,readAdmin,isAdminToken,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,calculateRanking,getBitrixProfile,listBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};
+if(require.main===module)server.listen(PORT,()=>console.log(`Bolão disponível na porta ${PORT}`));
+module.exports={cleanMatchBets,validEmail,validToken,createToken,readAdmin,isAdminToken,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,APP_BASE_URL,calculateRanking,getBitrixProfile,listBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};

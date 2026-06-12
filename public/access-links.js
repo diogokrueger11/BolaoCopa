@@ -16,7 +16,7 @@ grid.addEventListener("click",async event=>{
   const send=event.target.closest("[data-recipient]");if(!send)return;
   if(!confirm(`Enviar a mensagem individual para ${send.dataset.name} pelo chat do Bitrix?`))return;
   send.disabled=true;send.textContent="Enviando...";
-  const response=await fetch(`/api/send-bitrix-invite?token=${encodeURIComponent(token)}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({recipientToken:send.dataset.recipient,baseUrl:location.origin})});
+  const response=await fetch(`/api/send-bitrix-invite?token=${encodeURIComponent(token)}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({recipientToken:send.dataset.recipient})});
   const data=await responseJson(response);
   if(!response.ok){send.disabled=false;send.textContent="Enviar mensagem";return toast(data.error)}
   const cardEl=send.closest("[data-card]"),wasSent=cardEl.dataset.sent==="true";cardEl.dataset.sent="true";cardEl.classList.remove("pending");cardEl.classList.add("sent");cardEl.querySelector(".invite-status").className="invite-status status-sent";cardEl.querySelector(".invite-status").textContent="Mensagem enviada";cardEl.querySelector("small").textContent=`Enviada em ${formatDate(data.sentAt)}`;send.disabled=false;send.textContent="Reenviar mensagem";

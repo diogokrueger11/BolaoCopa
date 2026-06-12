@@ -2,6 +2,11 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { cleanMatchBets, validEmail, validToken, createToken, findByToken, SPECIAL_DEADLINE, calculateRanking } = require("../server");
 
+test("usa o endereço oficial da rede interna", () => {
+  const { APP_BASE_URL } = require("../server");
+  assert.equal(APP_BASE_URL, "http://10.10.0.25:8077");
+});
+
 test("valida e-mail", () => {
   assert.equal(validEmail("pessoa@exemplo.com"), true);
   assert.equal(validEmail("invalido"), false);

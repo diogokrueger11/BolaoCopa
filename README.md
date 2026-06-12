@@ -13,10 +13,10 @@ node server.js
 Abra:
 
 ```text
-http://localhost:3000/?email=pessoa@exemplo.com
+http://localhost:3000/
 ```
 
-O e-mail da URL é usado como chave dos palpites no arquivo `data/bets.json`.
+Os participantes acessam seus links individuais com token. A administração usa o token configurado em `data/admin.json`.
 
 ## Regras implementadas
 

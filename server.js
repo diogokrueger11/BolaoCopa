@@ -48,6 +48,8 @@ function createToken() {
   return crypto.randomBytes(24).toString("hex");
 }
 function readAdmin() {
+  const environmentToken = (process.env.ADMIN_ACCESS_TOKEN || "").trim().toLowerCase();
+  if (validToken(environmentToken)) return { name: process.env.ADMIN_NAME || "DCASH", accessToken: environmentToken };
   const admin = readJson(ADMIN_FILE);
   return validToken(admin.accessToken) ? admin : null;
 }

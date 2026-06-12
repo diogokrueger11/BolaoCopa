@@ -7,6 +7,15 @@ test("usa o endereço oficial da rede interna", () => {
   assert.equal(APP_BASE_URL, "http://10.10.0.25:8077");
 });
 
+test("aceita token administrativo por variável de ambiente", () => {
+  const { isAdminToken } = require("../server");
+  const previous = process.env.ADMIN_ACCESS_TOKEN;
+  process.env.ADMIN_ACCESS_TOKEN = "a".repeat(48);
+  assert.equal(isAdminToken("a".repeat(48)), true);
+  if (previous === undefined) delete process.env.ADMIN_ACCESS_TOKEN;
+  else process.env.ADMIN_ACCESS_TOKEN = previous;
+});
+
 test("valida e-mail", () => {
   assert.equal(validEmail("pessoa@exemplo.com"), true);
   assert.equal(validEmail("invalido"), false);

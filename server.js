@@ -3,7 +3,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8077;
 const PUBLIC_DIR = path.join(__dirname, "public");
 const DATA_DIR = path.join(__dirname, "data");
 const DB_FILE = path.join(DATA_DIR, "bets.json");

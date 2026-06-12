@@ -13,6 +13,7 @@ const BITRIX_CONFIG_FILE = path.join(DATA_DIR, "bitrix-config.json");
 const SPECIAL_DEADLINE = new Date("2026-06-16T02:59:59.999Z");
 const profileCache = new Map();
 let bitrixSyncPromise = null;
+const GAME_KICKOFFS = buildGameKickoffs();
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(DB_FILE)) fs.writeFileSync(DB_FILE, "{}\n");
@@ -46,6 +47,20 @@ function validToken(token) {
 function createToken() {
   return crypto.randomBytes(24).toString("hex");
 }
+function buildGameKickoffs() {
+  const groups={B:["Canada","Bosnia","Catar","Suica"],C:["Brasil","Marrocos","Haiti","Escocia"],D:["Estados Unidos","Paraguai","Australia","Turquia"],E:["Alemanha","Curacao","Costa do Marfim","Equador"],F:["Holanda","Japao","Suecia","Tunisia"],G:["Belgica","Egito","Ira","Nova Zelandia"],H:["Espanha","Cabo Verde","Arabia Saudita","Uruguai"],I:["Franca","Senegal","Iraque","Noruega"],J:["Argentina","Argelia","Austria","Jordania"],K:["Portugal","Congo RD","Uzbequistao","Colombia"],L:["Inglaterra","Croacia","Gana","Panama"]};
+  const dates=[
+    {B:"2026-06-13",C:"2026-06-13",D:"2026-06-13",E:"2026-06-14",F:"2026-06-14",G:"2026-06-15",H:"2026-06-15",I:"2026-06-16",J:"2026-06-16",K:"2026-06-17",L:"2026-06-17"},
+    {B:"2026-06-18",C:"2026-06-19",D:"2026-06-19",E:"2026-06-20",F:"2026-06-20",G:"2026-06-21",H:"2026-06-21",I:"2026-06-22",J:"2026-06-22",K:"2026-06-23",L:"2026-06-23"},
+    {B:"2026-06-24",C:"2026-06-24",D:"2026-06-25",E:"2026-06-25",F:"2026-06-25",G:"2026-06-26",H:"2026-06-26",I:"2026-06-26",J:"2026-06-27",K:"2026-06-27",L:"2026-06-27"}
+  ];
+  const games={"D-USA-PAR":"2026-06-13T01:00:00.000Z"};
+  Object.entries(groups).forEach(([group,teams])=>[[[2,3],[0,1]],[[0,2],[3,1]],[[3,0],[1,2]]].forEach((pairs,round)=>pairs.forEach((pair,index)=>{
+    const home=teams[pair[0]],away=teams[pair[1]],excluded=(group==="B"&&home==="Canada"&&away==="Bosnia")||(group==="D"&&home==="Estados Unidos"&&away==="Paraguai");
+    if(!excluded)games[`${group}-${home}-${away}`.replaceAll(" ","-")]=`${dates[round][group]}T${index?"22":"16"}:00:00.000Z`;
+  })));
+  return games;
+}
 function findByToken(db, token) {
   if (!validToken(token)) return null;
   const entry = Object.entries(db).find(([, record]) => record.accessToken === token);
@@ -70,11 +85,46 @@ function cleanMatchBets(matches, now) {
   if (!matches || typeof matches !== "object") return result;
   for (const [id, bet] of Object.entries(matches)) {
     if (!["home", "draw", "away"].includes(bet?.pick)) continue;
-    const kickoff = new Date(bet.kickoff);
+    const kickoff = new Date(GAME_KICKOFFS[id]);
     if (Number.isNaN(kickoff.valueOf()) || kickoff <= now) continue;
     result[id] = { pick: bet.pick, kickoff: kickoff.toISOString() };
   }
   return result;
+}
+function gameTransparency(gameId, now = new Date()) {
+  const kickoff = new Date(GAME_KICKOFFS[gameId]);
+  if (Number.isNaN(kickoff.valueOf())) return { status:404, body:{ error:"Jogo não encontrado." } };
+  if (kickoff > now) return { status:403, body:{ error:"Os palpites serão liberados quando o jogo começar.", kickoff:kickoff.toISOString() } };
+  const picks = Object.values(readJson(DB_FILE)).flatMap(record => {
+    const pick = record.matches?.[gameId]?.pick;
+    if (!["home","draw","away"].includes(pick)) return [];
+    return [{ name:record.profile?.name||"Participante", photo:record.profile?.photo||null, pick }];
+  }).sort((a,b)=>a.name.localeCompare(b.name,"pt-BR"));
+  const totals={home:0,draw:0,away:0};
+  picks.forEach(item=>{totals[item.pick]+=1});
+  return { status:200, body:{ gameId, kickoff:kickoff.toISOString(), total:picks.length, totals, picks } };
+}
+function allBetsTransparency() {
+  const bets = readJson(DB_FILE);
+  const rows = Object.entries(bets).flatMap(([email,record]) => Object.entries(record.matches||{}).flatMap(([gameId,bet]) => {
+    if (!["home","draw","away"].includes(bet?.pick) || !GAME_KICKOFFS[gameId]) return [];
+    return [{
+      participant:record.profile?.name||"Participante",
+      photo:record.profile?.photo||null,
+      email,
+      gameId,
+      pick:bet.pick,
+      kickoff:GAME_KICKOFFS[gameId],
+      started:new Date(GAME_KICKOFFS[gameId])<=new Date()
+    }];
+  }));
+  rows.sort((a,b)=>new Date(a.kickoff)-new Date(b.kickoff)||a.participant.localeCompare(b.participant,"pt-BR"));
+  return {
+    rows,
+    participants:Object.keys(bets).length,
+    participantsWithBets:new Set(rows.map(row=>row.email)).size,
+    totalBets:rows.length
+  };
 }
 function calculateRanking(bets, results) {
   const validResults = Object.fromEntries(Object.entries(results).filter(([, pick]) => ["home", "draw", "away"].includes(pick)));
@@ -97,7 +147,7 @@ async function sendBitrixInvite(record, baseUrl = APP_BASE_URL) {
   let origin;
   try { origin = new URL(APP_BASE_URL || baseUrl).origin; } catch { throw new Error("Endereço do bolão inválido."); }
   const webhook = bitrixWebhookUrl();
-  if (!webhook) throw new Error("Webhook Bitrix não configurado.");
+  if (!webhook) throw new Error("Configure BITRIX_WEBHOOK_URL ou data/bitrix-config.json no servidor.");
   const name = record.profile.name || "Participante";
   const link = `${origin}/?token=${record.accessToken}`;
   const message = `Olá, ${name}! O Bolão DCASH Copa 2026 começou. Acesse seu link individual para registrar seus palpites:\n\n${link}\n\nEste link é pessoal e não deve ser compartilhado.`;
@@ -163,7 +213,7 @@ function profileFromBitrixUser(user) {
 }
 async function listBitrixUsers() {
   const webhook = bitrixWebhookUrl();
-  if (!webhook) throw new Error("Webhook Bitrix não configurado.");
+  if (!webhook) throw new Error("Configure BITRIX_WEBHOOK_URL ou data/bitrix-config.json no servidor.");
   const users = [];
   let start = 0;
   for (let page = 0; page < 100; page += 1) {
@@ -260,6 +310,10 @@ const server=http.createServer(async(req,res)=>{
   if(url.pathname==="/api/ranking"){
     return send(res,200,await enrichRanking(calculateRanking(readJson(DB_FILE),readJson(RESULTS_FILE))));
   }
+  if(url.pathname==="/api/game-transparency"){
+    const result=gameTransparency(url.searchParams.get("id")||"");
+    return send(res,result.status,result.body);
+  }
   if(url.pathname==="/api/sync-bitrix"&&req.method==="POST"){
     try{return send(res,200,await syncBitrixUsers())}catch(error){return send(res,502,{error:error.message})}
   }
@@ -274,6 +328,9 @@ const server=http.createServer(async(req,res)=>{
       sentAt:record.inviteSentAt||null
     })).sort((a,b)=>a.name.localeCompare(b.name,"pt-BR"));
     return send(res,200,{links});
+  }
+  if(url.pathname==="/api/admin-transparency"){
+    return send(res,200,allBetsTransparency());
   }
   if(url.pathname==="/api/send-bitrix-invite"&&req.method==="POST"){
     const db=readJson(DB_FILE);

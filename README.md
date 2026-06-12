@@ -24,13 +24,16 @@ Para abrir diretamente a página administrativa, acesse:
 http://10.10.0.25:8077/admin
 ```
 
-No servidor Linux, configure a porta e o endereço dos convites ao iniciar:
+No servidor Linux, configure a porta, o endereço dos convites e o webhook do Bitrix ao iniciar:
 
 ```bash
 PORT=8077 \
 APP_BASE_URL=http://10.10.0.25:8077 \
+BITRIX_WEBHOOK_URL=https://SEU_BITRIX/rest/USUARIO/CHAVE \
 node server.js
 ```
+
+Como alternativa à variável `BITRIX_WEBHOOK_URL`, copie o arquivo local `data/bitrix-config.json` para o mesmo caminho no servidor. Esse arquivo contém uma credencial secreta e é ignorado pelo Git.
 
 ## Regras implementadas
 

@@ -29,7 +29,7 @@ function writeDb(db) {
 }
 function send(res, status, body, type = "application/json; charset=utf-8") {
   res.writeHead(status, { "Content-Type": type, "Cache-Control": "no-store", "Referrer-Policy":"no-referrer" });
-  res.end(type.startsWith("application/json") ? JSON.stringify(body) : body);
+  res.end(type.startsWith("application/json") && !Buffer.isBuffer(body) ? JSON.stringify(body) : body);
 }
 function receiveJson(req) {
   return new Promise((resolve, reject) => {

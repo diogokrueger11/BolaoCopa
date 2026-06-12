@@ -29,7 +29,7 @@ node scripts/sync-bitrix.js
 O acesso aos palpites utiliza um token individual, sem expor o e-mail:
 
 ```text
-http://localhost:3000/?token=TOKEN_INDIVIDUAL
+http://localhost:8077/?token=TOKEN_INDIVIDUAL
 ```
 
 O administrador pode abrir a tela `Links de acesso` pelo botao fixo exibido em seu acesso.

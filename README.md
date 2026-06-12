@@ -13,10 +13,16 @@ node server.js
 Abra:
 
 ```text
-http://localhost:3000/
+http://localhost:8077/
 ```
 
 Os participantes acessam seus links individuais com token. A administração usa o token configurado em `data/admin.json`.
+
+Para abrir diretamente a página administrativa, acesse:
+
+```text
+http://10.10.0.25:8077/admin
+```
 
 No servidor Linux, configure porta, endereço dos convites e token administrativo ao iniciar:
 

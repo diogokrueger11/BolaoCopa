@@ -3,7 +3,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8077;
 const APP_BASE_URL = process.env.APP_BASE_URL || "http://10.10.0.25:8077";
 const PUBLIC_DIR = path.join(__dirname, "public");
 const DATA_DIR = path.join(__dirname, "data");
@@ -30,6 +30,10 @@ function writeDb(db) {
 function send(res, status, body, type = "application/json; charset=utf-8") {
   res.writeHead(status, { "Content-Type": type, "Cache-Control": "no-store", "Referrer-Policy":"no-referrer" });
   res.end(type.startsWith("application/json") ? JSON.stringify(body) : body);
+}
+function redirect(res, location) {
+  res.writeHead(302, { "Location": location, "Cache-Control": "no-store", "Referrer-Policy":"no-referrer" });
+  res.end();
 }
 function receiveJson(req) {
   return new Promise((resolve, reject) => {
@@ -258,6 +262,11 @@ async function betsApi(req, res, url) {
 const MIME={".html":"text/html; charset=utf-8",".css":"text/css; charset=utf-8",".js":"text/javascript; charset=utf-8",".json":"application/json; charset=utf-8"};
 const server=http.createServer(async(req,res)=>{
   const url=new URL(req.url,`http://${req.headers.host}`);
+  if(url.pathname.toLowerCase()==="/admin"||url.pathname.toLowerCase()==="/admin/"){
+    const admin=readAdmin();
+    if(!admin)return send(res,503,"Acesso administrativo nao configurado.","text/plain; charset=utf-8");
+    return redirect(res,`/acessos.html?token=${encodeURIComponent(admin.accessToken)}`);
+  }
   if(url.pathname==="/api/bets")return betsApi(req,res,url);
   if(url.pathname==="/api/profile"){
     const token=url.searchParams.get("token")||"";

@@ -1,0 +1,14 @@
+{
+  "name": "bolao-copa-2026",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test",
+    "sync:bitrix": "node scripts/sync-bitrix.js",
+    "tokens": "node scripts/generate-tokens.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

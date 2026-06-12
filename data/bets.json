@@ -1,0 +1,955 @@
+{
+  "diogo.krueger@dcashcapital.com.br": {
+    "matches": {
+      "D-USA-PAR": {
+        "pick": "home",
+        "kickoff": "2026-06-13T01:00:00.000Z"
+      },
+      "B-Catar-Suica": {
+        "pick": "home",
+        "kickoff": "2026-06-13T16:00:00.000Z"
+      },
+      "C-Haiti-Escocia": {
+        "pick": "away",
+        "kickoff": "2026-06-13T16:00:00.000Z"
+      },
+      "D-Australia-Turquia": {
+        "pick": "home",
+        "kickoff": "2026-06-13T16:00:00.000Z"
+      },
+      "C-Brasil-Marrocos": {
+        "pick": "away",
+        "kickoff": "2026-06-13T22:00:00.000Z"
+      },
+      "E-Costa-do-Marfim-Equador": {
+        "pick": "home",
+        "kickoff": "2026-06-14T16:00:00.000Z"
+      },
+      "F-Suecia-Tunisia": {
+        "pick": "away",
+        "kickoff": "2026-06-14T16:00:00.000Z"
+      },
+      "E-Alemanha-Curacao": {
+        "pick": "home",
+        "kickoff": "2026-06-14T22:00:00.000Z"
+      },
+      "F-Holanda-Japao": {
+        "pick": "away",
+        "kickoff": "2026-06-14T22:00:00.000Z"
+      }
+    },
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": "2026-06-12T14:11:22.726Z",
+    "profile": {
+      "bitrixId": "120",
+      "name": "Diogo Krueger",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/84f/84f56b79334717211b7e2a62248dc15a/2026-05-29_14h24_01.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "b51fff457fc24718df925e17adeacc8f3494461d2bdc58d9"
+  },
+  "ti@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "1",
+      "name": "TI - DCASH CAPITAL",
+      "photo": null,
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "7b6e6bde8264d3611775adf7b71ca80404ce8da71a0b0126"
+  },
+  "joao.jagas@br24.io": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "10",
+      "name": "João Mateus Jagas",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/8d8/8d8f13086fed5f204a49a436fbe9e904/f0d245858bb41f00f4d229c4b86dcd1b.jpg",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "9e5590c17c0a1aa01a48ac02ebd0d09192b9a5ffa1234e1f"
+  },
+  "euclides.junior@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "16",
+      "name": "Euclides Balbinot Junior",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/f46/f46ac540b9d401407def85e0745c7057/DCASH_ocpproducoes-5.jpg.png",
+      "phone": "47 99760 4220",
+      "found": true
+    },
+    "accessToken": "35c4ca646108f8866a23e12bbcc5c51a863b0d44aa5269c8",
+    "inviteSentAt": "2026-06-12T17:26:48.498Z",
+    "inviteMessageId": 114952
+  },
+  "luiz.venancio@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "18",
+      "name": "Luiz Eduardo Venancio",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/b1d/b1dc151c70013c7b6d608fe8513ade78/XH2R3421 _2_.jpg.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "14dbd40ea915a8ada42aca4385b2ab400a7c2244a877fda8"
+  },
+  "gustavo.floriani@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "20",
+      "name": "Gustavo Floriani",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/746/7467751749ad12f014e47844172adaa8/RETRATOS DCASH CAPITAL-28d.png",
+      "phone": "(47) 99130-1971",
+      "found": true
+    },
+    "accessToken": "ea4141a90063a557396525e09de9db01cd975deeff57be2b"
+  },
+  "help@br24.io": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "28",
+      "name": "Usuário de Testes Br24",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/54e/54e78a376a5e580d679a7535eae227df/0520ad9ea435a71491c45748dbca1307.jpg",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "e0c081858904409d5a0a2cdd64a7e2b738196015f2e66660"
+  },
+  "natan@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "32",
+      "name": "Natan Dequech",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/831/831262de5da9048f0ff0029e9eef4d05/Natan_Foto_Perfil.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "3c5cd5e09f681f82fa4c0bdd56e2863cc4ac10b240cf49c9"
+  },
+  "ana.milan@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "34",
+      "name": "Ana Milan",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/04e/04ec44b46b98f4eac029619766708a70/WhatsApp Image 2026-05-22 at 13.40.54.png",
+      "phone": "+55 47 2107-3603",
+      "found": true
+    },
+    "accessToken": "5ced27ed5c665e6632d69858e6e179015b8c603074aa673a"
+  },
+  "dayane.carolina@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "36",
+      "name": "Dayane Dombrowicz",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/bb8/bb8608c2811f05660713dc9515ca28d1/WhatsApp Image 2026-04-13 at 10.46.19.png",
+      "phone": "+55 47 3373-7774",
+      "found": true
+    },
+    "accessToken": "71ab4944f9d7b62ab8a3b97faf81fd37cf1dafb4a5967a14"
+  },
+  "sebastiao.canani@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "40",
+      "name": "Sebastião Canani",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/d81/d81a99e3692ad4665af459456bf3a1a3/IMG_1935.PNG",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "544267deb1fcd12983dc6bc256a01ad21d2b7e36be426ec7",
+    "inviteSentAt": "2026-06-12T17:28:06.961Z",
+    "inviteMessageId": 114962
+  },
+  "nayara@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "42",
+      "name": "Nayara Thais Weigsding",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/799/7994b69163c5889bb82eb2160e373af7/NAY.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "ce95f69a6ab7b0717c28b9df50fa6c903e315d59d9c8e389"
+  },
+  "guisyfher.moreira@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "44",
+      "name": "Güisyfher Moreira",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/b17/b17f40050a8e27054780dba457b83d44/Imagem do WhatsApp de 2025-04-16 a_s_ 12.58.54_b8e8ce5e.jpg.png",
+      "phone": "47 3373-7775",
+      "found": true
+    },
+    "accessToken": "00843ea7c20a1779ef029d7ab579d164e93e74456ab4a266"
+  },
+  "aline.juliani@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "48",
+      "name": "Aline Juliani",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/561/56155a817c9adf614ebc05fd6a741a71/WhatsApp Image 2026-06-09 at 09.01.40.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "1cc3566ad8afe63ece18846ed2a83506c6371d76f61748b0"
+  },
+  "luis.fonseca@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "50",
+      "name": "Luis Fonseca",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/410/410737e4c7ea9d0e3532a5bbb95d4217/RETRATOS DCASH CAPITAL-95.jpg.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "e07585ec6254b3268613564fd4f449495fd9c931c44846b2"
+  },
+  "tainara.janing@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "52",
+      "name": "Tainara Janing",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/27e/27ea080bb821fff7ddc4e4761f749024/RETRATOS DCASH CAPITAL-90.jpg.png",
+      "phone": "+55 47 988465425",
+      "found": true
+    },
+    "accessToken": "f70c2315af2f6f9bdc9aa58fa62131648741b265c86221b6"
+  },
+  "carina.rocha@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "54",
+      "name": "Carina Rocha",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/b1d/b1daa194754d604dc112d517ba9795bd/Imagem do WhatsApp de 2025-11-25 a_s_ 14.43.52_24e4a9c3.jpg.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "2c4ec820e6d6172b2c22bcb7c5546403096e6f79a929441e"
+  },
+  "ezequiel.juliani@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "56",
+      "name": "Ezequiel Juliani",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/5e1/5e1175379b63ae1633c9dc40bbc254a5/Foto Perfil.jpg.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "45322ddaf347e01fe5f635cca2f60b8b76f17069e5f30832"
+  },
+  "suporte@solucoes.eti.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "74",
+      "name": "Suporte Soluções ETI",
+      "photo": null,
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "89ffdd05d8e4e7b7a81c6e11435a50b6f43933597d14544d"
+  },
+  "joao.zimmermann@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "110",
+      "name": "João Zimmermann",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/c88/c88244c162d42b514667ae25581f2017/BITRIX.jpg.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "1214fc110a69eb021c9ea20dd0d56d277e78c6c3943b8b9f"
+  },
+  "larissa.manes@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "112",
+      "name": "Larissa Manes",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/4d0/4d0159d1cc8597d8677347fc10abc5fd/MG_7099.jpg.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "82b284b511b2d09ee3c8539a3500be2af168b6a7ecae0cf3"
+  },
+  "alex.ramos@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "118",
+      "name": "Alex Ramos",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/86a/86aa7a1b659df6ca2dd2477a83254c63/alex.jpg.png",
+      "phone": "15991946147",
+      "found": true
+    },
+    "accessToken": "65718c8f410142129323f75adef0a3f0488089d809320027"
+  },
+  "matias.mendoza@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "122",
+      "name": "Matias Mendoza",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/0f2/0f2aac864d6c4d6c9ee36e70667f80d1/WhatsApp Image 2026-01-26 at 14.45.53.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "7be4cbe6043cdc60ab0dd8d9fac509b8b2785908372c1ee5"
+  },
+  "leila.dalmonico@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "124",
+      "name": "Leila Dalmonico",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/447/44704bfeb996caf28e64c7c977459323/leila foto.png",
+      "phone": "47992741304",
+      "found": true
+    },
+    "accessToken": "b393dc145bce482143b32f8defb23e598492afcc5e2c660f"
+  },
+  "thais.cerutti@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "126",
+      "name": "Thais Cerutti",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/30a/30a8580fa8082232a583102c61dbb388/MG_7018.jpg.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "a587678bed0e77b6778913d81e0b93ccf3d21e70543c4cfa"
+  },
+  "bruna.ilheo@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "128",
+      "name": "Bruna Ilheo",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/c5a/c5a6bb9df6094423fcf93d9ff29407e2/WhatsApp Image 2026-05-26 at 12.57.11.png",
+      "phone": "47991977866",
+      "found": true
+    },
+    "accessToken": "976eb86d62397aa1d24a2c72b282fda512cc9314f84551a3"
+  },
+  "franciele.engelmann@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "134",
+      "name": "Franciele Engelmann",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/780/78038951af338746d7610101b75f2ef8/WhatsApp Image 2026-06-09 at 08.19.52.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "669d652405d2eb0b76497634550f3c542fc4162309f253fe"
+  },
+  "natali.costa@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "138",
+      "name": "Natali Costa",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/1ae/1ae4a9fc2d8b1ed4499ba9d15b038b99/FOTO NATI.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "7747e7fd1fe724fb2e64ab25955aff0f504b3c4865ff049e"
+  },
+  "djeovana@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "142",
+      "name": "Djeovana Dombrowicz",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/39e/39e73a9d1b1136b0a3240f6bf095890a/WhatsApp Image 2026-04-15 at 10.29.42.png",
+      "phone": "47 99734-2464",
+      "found": true
+    },
+    "accessToken": "b63ca99d40d39c5f2e6b2cdc617483c1532ecc9c9f820817"
+  },
+  "larissa.montel@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "144",
+      "name": "Larissa Montel",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/538/53895aaef1643c7c3a223fd21fce1360/MG_6985.jpg.png",
+      "phone": "47 3373-7724",
+      "found": true
+    },
+    "accessToken": "663ee295b1272404712dd0ef597760b063f57cb23261a71b"
+  },
+  "paola.riella@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "146",
+      "name": "Paola Giovanna Riella",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/591/591d4843a028f072f704e86e984229c3/ChatGPT Image 25 de mai. de 2026_ 10_40_05.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "586edfa830c7caa1fdc0e380cd20b8012e0e8f171593f161"
+  },
+  "daniele.cruz@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "148",
+      "name": "Daniele Cruz",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/f62/f6231e4156951a4775e52d46617d6638/WhatsApp Image 2025-12-18 at 11.22.57.png",
+      "phone": "47 2107-3612",
+      "found": true
+    },
+    "accessToken": "6cb6bc3ccf376da31a04560aec38f9e043fee4795405f11b"
+  },
+  "leticia.walz@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "150",
+      "name": "Letícia Morais Walz",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/0b5/0b595efa99b045e3f247d9a1c928b0cf/Foto perfil.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "a332f8ec46019bcd47a3b7ff24fb4bef5a136658dcfd852e"
+  },
+  "greyci.toniolli@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "158",
+      "name": "Greyci Sheron Toniolli",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/a38/a386db1c84c341ff9974bbf412846e17/IMG_0740.JPG.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "4cc6116c18925304668d7a5e675682adbe42a66654efeb02"
+  },
+  "ana.arnhold@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "160",
+      "name": "Ana Karine Arnhold",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/36a/36a4cf858e610e4bb13ca6ba6d066d9b/ana.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "9c1370d15752fec7ab0c100d6ac3ccb0146602accf59530a"
+  },
+  "alexandre.franz@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "172",
+      "name": "Alexandre Franz",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/4bb/4bbc397d8287719137aed6c7ef08ae8b/WhatsApp Image 2026-05-22 at 13.07.54 _1_.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "66032f09e1d453fc0f12120a3be5afb90880b347a5cbc840"
+  },
+  "chd@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "174",
+      "name": "Nego",
+      "photo": null,
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "19b570a22b3e88ca3ef28274796ca58c313ea38b8998fdff"
+  },
+  "nathalia.gorges@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "176",
+      "name": "Nathália Gorges",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/9ee/9ee70460fe008bdf9f547262fe07ad59/WhatsApp Image 2026-02-11 at 13.05.44 _1_.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "9ea6d36d2164c4265dfc3f020beae6914cf090f3fea506e0"
+  },
+  "bruno.cardoso@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "178",
+      "name": "Bruno Cardoso",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/6e8/6e8e00e98ffd2ec1ae46a0de83b46df3/upload.phpaaction_uncloudifile_71494isignature_71494.03630389c6597e717efc8981699484b61ec34bfd43bddecaf280e3ce9cd182d3.png",
+      "phone": "(47) 99260-7515",
+      "found": true
+    },
+    "accessToken": "dea8a0c628aa58fc7fb03571498388b9512afbb5f3796b9e",
+    "inviteSentAt": "2026-06-12T17:45:20.612Z",
+    "inviteMessageId": 115026
+  },
+  "caio.reblin@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "180",
+      "name": "Caio Reblin",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/28c/28c7729fe11b46c3fdb4e5877cb704ed/IMG-20260113-WA0134.jpg.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "be411976b5d8150c05f7391c1d0879cd6b8ef5e9fc05a91c"
+  },
+  "giovani.giacomini@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "182",
+      "name": "Giovani Giacomini",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/d9f/d9f26166860c7715f5de1c55fa6a1696/foto giovani dcash.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "688e6baea4c3b9997de14142a8dff8541ac56899802ef782"
+  },
+  "ana.dalfovo@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "184",
+      "name": "Ana Paula Dalfovo",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/2f1/2f183171e29a389bb5f96f543873f93f/WhatsApp Image 2026-05-18 at 11.13.58.png",
+      "phone": "47984954277",
+      "found": true
+    },
+    "accessToken": "a59f24f6a7133fadff6878fd13c1e5069e75a1dba1e2cdbc"
+  },
+  "andreia.bertoldi@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "192",
+      "name": "Andreia Bertoldi",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/9ee/9ee62b219194157dd4e51ff5baee3b52/Captura de tela 2026-04-23 115849.png",
+      "phone": "47 21073606",
+      "found": true
+    },
+    "accessToken": "b767f015000bcf64ea6ee34f5006ac1268d9cc8c800ebc16"
+  },
+  "luciani.spaniol@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "194",
+      "name": "Luciani Spaniol",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/a59/a59709f4bd5f6a186a20e8b77f4d6f50/WhatsApp Image 2026-05-22 at 13.04.00 _1_.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "4183afe0d187b8728ea46f148e182e48f13d1b61b01c2d7d"
+  },
+  "maristela.koehler@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "196",
+      "name": "Maristela Koehler",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/440/44074b2ca373658347a502c941de5acf/Foto perfil.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "03cbd082ea7e2b440f5ffc4fa063d838c8b0c85747a9dd43"
+  },
+  "keven.gondim@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "202",
+      "name": "Keven Gondim",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/9a3/9a3581e2120cd54c68ac7d0956dad724/WhatsApp Image 2026-05-22 at 13.07.04.png",
+      "phone": "47 2107-3665",
+      "found": true
+    },
+    "accessToken": "f596e707db5b4f1c2928924ea6b6c015aa69739f747257c4"
+  },
+  "gabriely.oliveira@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "204",
+      "name": "Gabriely Oliveira",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/900/900455d5c1b2070149312a51d22d173b/IMG_7747.JPG.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "df8561b775c3e797071d756c89daa1753bea3c808f2ff8ce"
+  },
+  "viviane.tolfo@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "206",
+      "name": "Viviane Marschall",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/1c3/1c32dee2c98be058dc59640bc3b9f140/MG_7029.jpg.png",
+      "phone": "47992304883",
+      "found": true
+    },
+    "accessToken": "56377a85ab45b290c4e0ab163f7d4b663366754a1f39d78d"
+  },
+  "rodrigo.santos@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "208",
+      "name": "Rodrigo dos Santos",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/a55/a559d89fedaf86110cc564d91ce85d28/upload.phpoaction_uncloudtfile_76958asignature_76958.c60e51103a9c5a0ec7b8e7cfe56ff58cdafd9b4c2ea367b0d1c31a16f75e5f0b.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "adfc61d085c2df4e38a03e66a342bf2c95582719c74a10ca"
+  },
+  "gabriela.brandao@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "210",
+      "name": "Gabriela Brandão",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/83b/83bfc7bd56a93417e5b1f5fe5930cd67/WhatsApp Image 2026-01-22 at 15.26.23.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "c5d0e5bbc812c55561c4446f59596a56e45faf5f9e5504f0"
+  },
+  "lucas.schoeffel@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "212",
+      "name": "Lucas Pedroso",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/9b1/9b17ae124650e6610c9a997d6bcfd375/perfil .png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "523cedb06b20ca1baea5475a6ffa895f0f52ac6c21826d83"
+  },
+  "lorena.gomes@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "214",
+      "name": "Lorena Gomes",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/11a/11a6122e411781880617479a84b21828/LORENA.jpg.png",
+      "phone": "+55 47 2107-3630",
+      "found": true
+    },
+    "accessToken": "42db4b081a6099094874aa4175891996f96d4e6faa1e386a"
+  },
+  "bruna.silva@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "216",
+      "name": "Bruna Zimmermann",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/40a/40a0cf69313f187bdf9b936d9651254e/116f6e74eea797a32fde5c4a5d41a791.png",
+      "phone": "+5547997364477",
+      "found": true
+    },
+    "accessToken": "2cbf49233bf044578e3b95889692040bd38d389448dd360e"
+  },
+  "matheus.martins@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "218",
+      "name": "Matheus Souza Martins",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/22e/22ebc6e754ee012a656f5f1776ecb6d4/WhatsApp Image 2026-05-22 at 13.08.41 _1_.png",
+      "phone": " 47 2107-3629",
+      "found": true
+    },
+    "accessToken": "6b684ba2b99146095762365831d8b539748fa2eec3963876"
+  },
+  "carlos.braile@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "220",
+      "name": "Carlos Braile",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/d3a/d3a0e5a20642846eaa9d27cc531fa94d/upload.phpaaction_uncloudtfile_69740jsignature_69740.e7d2b88a40105094efc59de3ade2704170a4dec376afd70f71bfaf839e5a57dd.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "dde071b863c99c247602d27487810db872fc514d53118dd4"
+  },
+  "amabelle.cristina@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "224",
+      "name": "Amabelle Wisotscki",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/5a5/5a5dcda91522be56c02c8beb7a6d3097/foto amabelle.jpg.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "5007d812cb8a18b81aa8fc68718c5c778c5833d6743671e5"
+  },
+  "felipe.giacomini@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "226",
+      "name": "Felipe Giacomini",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/438/4381a960057961d275524e5ef7d92efa/Foto 3x4.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "0085f482f0f49e910c3cd5ac8d7a1bb182aa631268c7ecb6"
+  },
+  "mayara.castro@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "228",
+      "name": "Mayara Castro",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/f25/f25db1fbb03c65508640053a37924320/000e91f0-9441-4587-a88c-cc7a8c748d71.jpg.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "cab23bbec3d515726bf04fbf33b6a0848e95042ebbd9654c"
+  },
+  "ederson.pereira@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "232",
+      "name": "Ederson Alves Pereira",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/428/4282080f90b7439d5754ee4b0f6dbea6/RETRATOS DCASH CAPITAL-79 _2_.jpg.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "b3fe1c950f3b90c27b5d6eb431e75b4308d2b916d123f19b"
+  },
+  "jayne.testoni@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "234",
+      "name": "Jayne Testoni",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/2bd/2bd08863e1475b3c917b9b445b332362/ChatGPT Image 25 de mai. de 2026_ 14_26_41.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "f9ce3e9e71f74d35baa44f88a306ff4a0b964d0d03dcac50"
+  },
+  "damaris.silva@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "268",
+      "name": "Damaris Michalski da Silva",
+      "photo": null,
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "021a513f0ab52ffe0cb21d2d2b019534b58cdd1c1cdc9cdc"
+  },
+  "bruna.lemke@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "270",
+      "name": "Bruna Jaciara de Souza",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/bb6/bb610c4ab372a35811559568fe00b2b5/IMG_8167.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "cec2c2c63851e92c8658a11907a28ae13f24a05dca0e9bd6"
+  },
+  "graziele.trapp@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "272",
+      "name": "Graziele Trapp",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/204/204e6b151b39e3f2f45f6846da1b781d/ChatGPT Image 22 de mai. de 2026_ 14_19_18.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "3fb4f3af99c5bc82cc2ca30f570edc41cdad2d92b174fe73"
+  },
+  "ediandra.bett@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "274",
+      "name": "Ediandra Bett",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/98c/98c5051667e42ed9c5afe5fe741b568b/WhatsApp Image 2026-05-22 at 13.18.15.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "20cd41e6c5f446fb8bad7979399ce95c98e70cac04cc30f4"
+  },
+  "ana.pizzi@dcashcapital.com.br": {
+    "matches": {},
+    "special": null,
+    "specialLocked": false,
+    "updatedAt": null,
+    "profile": {
+      "bitrixId": "284",
+      "name": "Ana Letícia Gonçalves de Moraes Pizzi",
+      "photo": "https://cdn.bitrix24.com.br/b35654891/main/0d0/0d0702f9dbb3fb9e3edd55fd696902ad/1000289647.png",
+      "phone": null,
+      "found": true
+    },
+    "accessToken": "e4a2e2b6a7cba5a43762e015437c68de09bc3c8a0abfbf3c"
+  }
+}

@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { cleanMatchBets, validEmail, validToken, createToken, participantPublicId, findByToken, SPECIAL_DEADLINE, calculateParticipant, calculateRanking, extractFinishedResults, updateResults } = require("../server");
+const { cleanMatchBets, validEmail, validToken, createToken, participantPublicId, findByToken, SPECIAL_DEADLINE, setManualResult, calculateParticipant, calculateRanking, stringSimilarity, teamMatches, reconcileFinishedResults, extractFinishedResults, updateResults } = require("../server");
 
 test("usa o endereço oficial da rede interna", () => {
   const { APP_BASE_URL } = require("../server");
@@ -69,6 +69,47 @@ test("converte somente placares finalizados em resultados do bolao", () => {
   assert.deepEqual(extractFinishedResults(schedule,payload),{j1:"home"});
 });
 
+test("concilia Costa do Marfim x Equador", () => {
+  const schedule=[{id:"j1",home:"Costa do Marfim",away:"Equador"}];
+  const payload={events:[{status:{type:{completed:true}},competitions:[{competitors:[
+    {homeAway:"home",score:"1",team:{displayName:"Ivory Coast"}},
+    {homeAway:"away",score:"0",team:{displayName:"Ecuador"}}
+  ]}]}]};
+  assert.deepEqual(extractFinishedResults(schedule,payload),{j1:"home"});
+});
+
+test("prioriza IDs estaveis mesmo com nomes em outro idioma", () => {
+  assert.equal(teamMatches("Alemanha",{team:{id:"481",displayName:"Deutschland"}}),true);
+  assert.equal(teamMatches("Brasil",{team:{id:"205",displayName:"Brasil"}}),true);
+  assert.equal(teamMatches("Brasil",{team:{id:"481",displayName:"Brazil"}}),false);
+});
+
+test("aceita pequenas diferencas de grafia sem confundir selecoes", () => {
+  assert.equal(stringSimilarity("bosnia herzegovina","bosnia hercegovina")>=0.88,true);
+  assert.equal(teamMatches("Bosnia",{team:{displayName:"Bosnia and Herzegovina"}}),true);
+  assert.equal(teamMatches("Austria",{team:{displayName:"Australia"}}),false);
+});
+
+test("reporta jogo finalizado nao conciliado", () => {
+  const payload={events:[{name:"Unknown at Atlantis",status:{type:{completed:true}},competitions:[{competitors:[
+    {homeAway:"home",score:"1",team:{id:"x",displayName:"Atlantis"}},
+    {homeAway:"away",score:"0",team:{id:"y",displayName:"Unknown"}}
+  ]}]}]};
+  const result=reconcileFinishedResults([{id:"j1",home:"Brasil",away:"Marrocos"}],payload);
+  assert.deepEqual(result.results,{});
+  assert.equal(result.unmatched.length,1);
+  assert.equal(result.unmatched[0].reason,"not_found");
+});
+
+test("resultado manual grava somente arquivo de resultados", () => {
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),"bolao-manual-")),resultsFile=path.join(dir,"results.json"),betsFile=path.join(dir,"bets.json");
+  fs.writeFileSync(resultsFile,"{}\n");fs.writeFileSync(betsFile,'{"usuario":{"matches":{"j1":{"pick":"away"}}}}\n');
+  const betsBefore=fs.readFileSync(betsFile,"utf8");
+  assert.deepEqual(setManualResult("j1","home",resultsFile,{j1:"2026-06-14T20:00:00Z"}),{gameId:"j1",result:"home",total:1});
+  assert.deepEqual(JSON.parse(fs.readFileSync(resultsFile,"utf8")),{j1:"home"});
+  assert.equal(fs.readFileSync(betsFile,"utf8"),betsBefore);
+});
+
 test("atualizacao manual grava resultados sem alterar apostas", async () => {
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),"bolao-results-"));
   const resultsFile=path.join(dir,"results.json"),betsFile=path.join(dir,"bets.json");
@@ -83,7 +124,7 @@ test("atualizacao manual grava resultados sem alterar apostas", async () => {
     ]}]
   }]})});
   const result=await updateResults(fetchImpl,resultsFile,schedule);
-  assert.deepEqual(result,{fetched:1,changed:1,total:2});
+  assert.deepEqual(result,{fetched:1,changed:1,total:2,unmatched:[]});
   assert.deepEqual(JSON.parse(fs.readFileSync(resultsFile,"utf8")),{anterior:"draw",j1:"draw"});
   assert.equal(fs.readFileSync(betsFile,"utf8"),betsBefore);
 });

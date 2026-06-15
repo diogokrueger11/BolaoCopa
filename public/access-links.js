@@ -12,7 +12,7 @@ function card(item){
 }
 function metrics(items){document.querySelector("#links-count").textContent=items.length;document.querySelector("#sent-count").textContent=items.filter(x=>x.sent).length;document.querySelector("#pending-count").textContent=items.filter(x=>!x.sent).length}
 let allBets=[];
-function renderBets(){const search=document.querySelector("#bet-search").value.trim().toLocaleLowerCase("pt-BR"),status=document.querySelector("#bet-status").value,rows=allBets.filter(row=>{const game=gameById[row.gameId],text=`${row.participant} ${label(game?.home||"")} ${label(game?.away||"")}`.toLocaleLowerCase("pt-BR");return(!search||text.includes(search))&&(status==="all"||(status==="started"&&row.started)||(status==="future"&&!row.started))});betsBody.innerHTML=rows.length?rows.map(row=>{const game=gameById[row.gameId];return`<tr class="${row.correct?"correct-bet":""}"><td><div class="person">${avatar({name:row.participant,photo:row.photo})}<span><b>${row.participant}</b><small>${row.email}</small></span></div></td><td><b>${label(game?.home||row.gameId)} x ${label(game?.away||"")}</b></td><td><span class="admin-pick">${resultLabel(row.pick,game)}</span></td><td><span class="official-pick ${row.result?"available":""}">${resultLabel(row.result,game)}</span></td><td>${formatDate(row.kickoff)}</td><td><span class="game-status ${row.correct?"status-correct":row.started?"status-started":"status-future"}">${row.correct?"Acertou":row.result?"Nao acertou":row.started?"Iniciado":"Futuro"}</span></td><td><button class="table-recalculate" data-recalculate="${row.participantToken}" data-name="${row.participant}">Recalcular pontos</button></td></tr>`}).join(""):'<tr><td colspan="7" class="empty">Nenhum palpite encontrado.</td></tr>'}
+function renderBets(){const search=document.querySelector("#bet-search").value.trim().toLocaleLowerCase("pt-BR"),status=document.querySelector("#bet-status").value,rows=allBets.filter(row=>{const game=gameById[row.gameId],text=`${row.participant} ${label(game?.home||"")} ${label(game?.away||"")}`.toLocaleLowerCase("pt-BR");return(!search||text.includes(search))&&(status==="all"||(status==="started"&&row.started)||(status==="future"&&!row.started))});betsBody.innerHTML=rows.length?rows.map(row=>{const game=gameById[row.gameId];return`<tr class="${row.correct?"correct-bet":""}"><td><div class="person">${avatar({name:row.participant,photo:row.photo})}<span><b>${row.participant}</b><small>${row.email}</small></span></div></td><td><b>${label(game?.home||row.gameId)} x ${label(game?.away||"")}</b></td><td><span class="admin-pick">${resultLabel(row.pick,game)}</span></td><td><div class="manual-result"><select data-result-game="${row.gameId}" aria-label="Resultado de ${label(game?.home||row.gameId)} x ${label(game?.away||"")}"><option value="">Aguardando</option><option value="home" ${row.result==="home"?"selected":""}>${label(game?.home||"Mandante")}</option><option value="draw" ${row.result==="draw"?"selected":""}>Empate</option><option value="away" ${row.result==="away"?"selected":""}>${label(game?.away||"Visitante")}</option></select><button data-save-result="${row.gameId}">Salvar</button></div></td><td>${formatDate(row.kickoff)}</td><td><span class="game-status ${row.correct?"status-correct":row.started?"status-started":"status-future"}">${row.correct?"Acertou":row.result?"Nao acertou":row.started?"Iniciado":"Futuro"}</span></td><td><button class="table-recalculate" data-recalculate="${row.participantToken}" data-name="${row.participant}">Recalcular pontos</button></td></tr>`}).join(""):'<tr><td colspan="7" class="empty">Nenhum palpite encontrado.</td></tr>'}
 async function loadTransparency(){const response=await fetch("/api/admin-transparency"),data=await responseJson(response);if(!response.ok)throw new Error(data.error);allBets=data.rows;document.querySelector("#total-bets").textContent=data.totalBets;document.querySelector("#bettors-count").textContent=data.participantsWithBets;renderBets()}
 loadTransparency().catch(error=>betsBody.innerHTML=`<tr><td colspan="7" class="empty">${error.message}</td></tr>`);
 document.querySelector("#bet-search").addEventListener("input",renderBets);
@@ -21,7 +21,7 @@ document.querySelector("#update-results").addEventListener("click",async event=>
   const button=event.currentTarget,status=document.querySelector("#results-update-status");
   if(!confirm("Buscar agora os resultados finalizados e atualizar o ranking?"))return;
   button.disabled=true;button.textContent="Buscando resultados...";status.textContent="Consultando a fonte de resultados...";
-  try{const response=await fetch("/api/update-results",{method:"POST"}),data=await responseJson(response);if(!response.ok)throw new Error(data.error);status.textContent=`${data.fetched} jogos finalizados encontrados, ${data.changed} resultados alterados e ${data.total} contabilizados no ranking.`;await loadTransparency();toast("Resultados atualizados.")}
+  try{const response=await fetch("/api/update-results",{method:"POST"}),data=await responseJson(response);if(!response.ok)throw new Error(data.error);const pending=data.unmatched?.length?` ${data.unmatched.length} jogo(s) finalizado(s) nao conciliado(s); defina manualmente na tabela.`:"";status.textContent=`${data.fetched} jogos finalizados encontrados, ${data.changed} resultados alterados e ${data.total} contabilizados no ranking.${pending}`;await loadTransparency();toast(data.unmatched?.length?"Resultados atualizados com pendencias.":"Resultados atualizados.")}
   catch(error){status.textContent=error.message;toast("Nao foi possivel atualizar os resultados.")}
   finally{button.disabled=false;button.textContent="Recalcular todos os resultados"}
 });
@@ -34,7 +34,18 @@ async function recalculateUser(button){
   if(cardEl){cardEl.querySelector("[data-score]").textContent=data.points;cardEl.querySelector("[data-correct]").textContent=data.correct;cardEl.querySelector("[data-finished]").textContent=data.finishedGames;cardEl.querySelector("[data-recalculate-status]").textContent=`Recalculado: ${data.correct} acertos, ${data.points} pontos em ${data.finishedGames} jogos finalizados.`}
   await loadTransparency();toast(`Pontuacao de ${data.name} recalculada.`);
 }
-betsBody.addEventListener("click",event=>{const button=event.target.closest("[data-recalculate]");if(button)recalculateUser(button)});
+betsBody.addEventListener("click",async event=>{
+  const save=event.target.closest("[data-save-result]");
+  if(save){
+    const select=betsBody.querySelector(`[data-result-game="${save.dataset.saveResult}"]`),result=select?.value;
+    if(!result)return toast("Selecione o resultado do jogo.");
+    save.disabled=true;save.textContent="Salvando...";
+    const response=await fetch("/api/manual-result",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({gameId:save.dataset.saveResult,result})}),data=await responseJson(response);
+    if(!response.ok){save.disabled=false;save.textContent="Salvar";return toast(data.error)}
+    await loadTransparency();return toast("Resultado manual salvo e ranking recalculado.");
+  }
+  const button=event.target.closest("[data-recalculate]");if(button)recalculateUser(button)
+});
 grid.addEventListener("click",async event=>{
   const recalculate=event.target.closest("[data-recalculate]");
   if(recalculate)return recalculateUser(recalculate);

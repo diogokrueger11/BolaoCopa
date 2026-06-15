@@ -1,6 +1,9 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { cleanMatchBets, validEmail, validToken, createToken, findByToken, SPECIAL_DEADLINE, calculateRanking } = require("../server");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+const { cleanMatchBets, validEmail, validToken, createToken, findByToken, SPECIAL_DEADLINE, calculateRanking, extractFinishedResults, updateResults } = require("../server");
 
 test("usa o endereço oficial da rede interna", () => {
   const { APP_BASE_URL } = require("../server");
@@ -13,11 +16,11 @@ test("valida e-mail", () => {
 });
 test("remove palpites iniciados e escolhas invalidas", () => {
   const result = cleanMatchBets({
-    old:{pick:"home",kickoff:"2026-06-12T19:00:00Z"},
-    future:{pick:"draw",kickoff:"2026-06-13T01:00:00Z"},
-    invalid:{pick:"score",kickoff:"2026-06-13T01:00:00Z"}
-  }, new Date("2026-06-12T20:00:00Z"));
-  assert.deepEqual(Object.keys(result), ["future"]);
+    "D-USA-PAR":{pick:"home"},
+    "B-Catar-Suica":{pick:"draw"},
+    "C-Brasil-Marrocos":{pick:"score"}
+  }, new Date("2026-06-13T12:00:00Z"));
+  assert.deepEqual(Object.keys(result), ["B-Catar-Suica"]);
 });
 test("prazo especial termina no fim de 15 de junho em Brasilia", () => {
   assert.equal(SPECIAL_DEADLINE.toISOString(), "2026-06-16T02:59:59.999Z");
@@ -31,6 +34,43 @@ test("ranking contabiliza tres pontos por acerto", () => {
 test("ranking compartilha posicao em empate", () => {
   const bets={"ana@exemplo.com":{matches:{j1:{pick:"home"}}},"bia@exemplo.com":{matches:{j1:{pick:"home"}}}};
   assert.deepEqual(calculateRanking(bets,{j1:"home"}).ranking.map(row=>row.position),[1,1]);
+});
+
+test("converte somente placares finalizados em resultados do bolao", () => {
+  const schedule = [
+    { id:"j1", home:"Brasil", away:"Marrocos" },
+    { id:"j2", home:"Estados Unidos", away:"Paraguai" }
+  ];
+  const payload = { events:[
+    { status:{type:{completed:true}}, competitions:[{competitors:[
+      {homeAway:"home",score:"2",team:{displayName:"Brazil"}},
+      {homeAway:"away",score:"1",team:{displayName:"Morocco"}}
+    ]}]},
+    { status:{type:{completed:false}}, competitions:[{competitors:[
+      {homeAway:"home",score:"0",team:{displayName:"United States"}},
+      {homeAway:"away",score:"0",team:{displayName:"Paraguay"}}
+    ]}]}
+  ]};
+  assert.deepEqual(extractFinishedResults(schedule,payload),{j1:"home"});
+});
+
+test("atualizacao manual grava resultados sem alterar apostas", async () => {
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),"bolao-results-"));
+  const resultsFile=path.join(dir,"results.json"),betsFile=path.join(dir,"bets.json");
+  fs.writeFileSync(resultsFile,'{"anterior":"draw"}\n');
+  fs.writeFileSync(betsFile,'{"pessoa@exemplo.com":{"matches":{"j1":{"pick":"away"}}}}\n');
+  const betsBefore=fs.readFileSync(betsFile,"utf8");
+  const schedule=[{id:"j1",home:"Brasil",away:"Marrocos"}];
+  const fetchImpl=async()=>({ok:true,json:async()=>({events:[{
+    status:{type:{completed:true}},competitions:[{competitors:[
+      {homeAway:"home",score:"1",team:{displayName:"Brazil"}},
+      {homeAway:"away",score:"1",team:{displayName:"Morocco"}}
+    ]}]
+  }]})});
+  const result=await updateResults(fetchImpl,resultsFile,schedule);
+  assert.deepEqual(result,{fetched:1,changed:1,total:2});
+  assert.deepEqual(JSON.parse(fs.readFileSync(resultsFile,"utf8")),{anterior:"draw",j1:"draw"});
+  assert.equal(fs.readFileSync(betsFile,"utf8"),betsBefore);
 });
 
 test("gera e resolve token individual", () => {

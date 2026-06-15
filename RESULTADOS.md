@@ -2,6 +2,10 @@
 
 O ranking le os resultados oficiais em `data/results.json`.
 
+Na pagina `/admin`, use o botao `Buscar resultados dos jogos` para consultar os
+jogos finalizados e atualizar esse arquivo. A atualizacao e sempre manual e nao
+altera `data/bets.json`, onde ficam as apostas dos usuarios.
+
 Use o identificador do jogo e um dos valores `home`, `draw` ou `away`:
 
 ```json

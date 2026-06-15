@@ -10,6 +10,7 @@ const DATA_DIR = path.join(__dirname, "data");
 const DB_FILE = path.join(DATA_DIR, "bets.json");
 const RESULTS_FILE = path.join(DATA_DIR, "results.json");
 const BITRIX_CONFIG_FILE = path.join(DATA_DIR, "bitrix-config.json");
+const RESULTS_API_URL = process.env.RESULTS_API_URL || "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260612-20260627&limit=100";
 const SPECIAL_DEADLINE = new Date("2026-06-16T02:59:59.999Z");
 const profileCache = new Map();
 let bitrixSyncPromise = null;
@@ -26,6 +27,11 @@ function writeDb(db) {
   const temp = `${DB_FILE}.tmp`;
   fs.writeFileSync(temp, `${JSON.stringify(db, null, 2)}\n`);
   fs.renameSync(temp, DB_FILE);
+}
+function writeResults(results, file = RESULTS_FILE) {
+  const temp = `${file}.tmp`;
+  fs.writeFileSync(temp, `${JSON.stringify(results, null, 2)}\n`);
+  fs.renameSync(temp, file);
 }
 function send(res, status, body, type = "application/json; charset=utf-8") {
   res.writeHead(status, { "Content-Type": type, "Cache-Control": "no-store", "Referrer-Policy":"no-referrer" });
@@ -128,6 +134,57 @@ function calculateRanking(bets, results) {
     previous = row;
   });
   return { finishedGames: Object.keys(validResults).length, ranking };
+}
+const TEAM_ALIASES = {
+  "estados unidos":"united states", "suica":"switzerland", "brasil":"brazil",
+  "marrocos":"morocco", "escocia":"scotland", "turquia":"turkiye",
+  "alemanha":"germany", "curacao":"curacao", "costa do marfim":"ivory coast",
+  "holanda":"netherlands", "japao":"japan", "suecia":"sweden", "tunisia":"tunisia",
+  "belgica":"belgium", "egito":"egypt", "ira":"iran", "nova zelandia":"new zealand",
+  "espanha":"spain", "cabo verde":"cape verde islands", "arabia saudita":"saudi arabia",
+  "uruguai":"uruguay", "franca":"france", "senegal":"senegal", "iraque":"iraq",
+  "noruega":"norway", "argentina":"argentina", "argelia":"algeria", "austria":"austria",
+  "jordania":"jordan", "portugal":"portugal", "congo rd":"congo dr",
+  "uzbequistao":"uzbekistan", "colombia":"colombia", "inglaterra":"england",
+  "croacia":"croatia", "gana":"ghana", "panama":"panama", "mexico":"mexico",
+  "africa do sul":"south africa", "coreia do sul":"south korea", "tchequia":"czechia",
+  "canada":"canada", "bosnia":"bosnia and herzegovina", "catar":"qatar",
+  "paraguai":"paraguay", "australia":"australia", "haiti":"haiti"
+};
+function normalizeTeamName(value) {
+  const normalized = String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ").trim();
+  return TEAM_ALIASES[normalized] || normalized;
+}
+function competitorName(competitor) {
+  return competitor?.team?.displayName || competitor?.team?.shortDisplayName || competitor?.team?.name || "";
+}
+function extractFinishedResults(schedule, payload) {
+  const results = {};
+  for (const event of payload?.events || []) {
+    const competition = event.competitions?.[0];
+    if (!competition?.status?.type?.completed && !event.status?.type?.completed) continue;
+    const home = competition.competitors?.find(item => item.homeAway === "home");
+    const away = competition.competitors?.find(item => item.homeAway === "away");
+    const homeScore = Number(home?.score), awayScore = Number(away?.score);
+    if (!home || !away || !Number.isFinite(homeScore) || !Number.isFinite(awayScore)) continue;
+    const game = schedule.find(item =>
+      normalizeTeamName(item.home) === normalizeTeamName(competitorName(home)) &&
+      normalizeTeamName(item.away) === normalizeTeamName(competitorName(away))
+    );
+    if (game) results[game.id] = homeScore === awayScore ? "draw" : homeScore > awayScore ? "home" : "away";
+  }
+  return results;
+}
+async function updateResults(fetchImpl = fetch, resultsFile = RESULTS_FILE, schedule = readJson(path.join(PUBLIC_DIR, "schedule.json"))) {
+  const response = await fetchImpl(RESULTS_API_URL, { signal: AbortSignal.timeout(15000) });
+  if (!response.ok) throw new Error(`Fonte de resultados indisponivel (${response.status}).`);
+  const fetched = extractFinishedResults(schedule, await response.json());
+  const current = readJson(resultsFile);
+  const merged = { ...current, ...fetched };
+  const changed = Object.keys(fetched).filter(id => current[id] !== fetched[id]).length;
+  writeResults(merged, resultsFile);
+  return { fetched: Object.keys(fetched).length, changed, total: Object.keys(merged).length };
 }
 function bitrixWebhookUrl() {
   return process.env.BITRIX_WEBHOOK_URL || readJson(BITRIX_CONFIG_FILE).webhookUrl || "";
@@ -300,6 +357,9 @@ const server=http.createServer(async(req,res)=>{
   if(url.pathname==="/api/ranking"){
     return send(res,200,await enrichRanking(calculateRanking(readJson(DB_FILE),readJson(RESULTS_FILE))));
   }
+  if(url.pathname==="/api/update-results"&&req.method==="POST"){
+    try{return send(res,200,await updateResults())}catch(error){return send(res,502,{error:error.message})}
+  }
   if(url.pathname==="/api/game-transparency"){
     const result=gameTransparency(url.searchParams.get("id")||"");
     return send(res,result.status,result.body);
@@ -341,4 +401,4 @@ const server=http.createServer(async(req,res)=>{
   send(res,200,fs.readFileSync(file),MIME[path.extname(file)]||"application/octet-stream");
 });
 if(require.main===module)server.listen(PORT,()=>console.log(`Bolão disponível na porta ${PORT}`));
-module.exports={cleanMatchBets,validEmail,validToken,createToken,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,APP_BASE_URL,calculateRanking,getBitrixProfile,listBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};
+module.exports={cleanMatchBets,validEmail,validToken,createToken,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,APP_BASE_URL,RESULTS_API_URL,calculateRanking,normalizeTeamName,extractFinishedResults,updateResults,getBitrixProfile,listBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};

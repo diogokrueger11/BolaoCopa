@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { cleanMatchBets, validEmail, validToken, createToken, findByToken, SPECIAL_DEADLINE, calculateRanking, extractFinishedResults, updateResults } = require("../server");
+const { cleanMatchBets, validEmail, validToken, createToken, findByToken, SPECIAL_DEADLINE, calculateParticipant, calculateRanking, extractFinishedResults, updateResults } = require("../server");
 
 test("usa o endereço oficial da rede interna", () => {
   const { APP_BASE_URL } = require("../server");
@@ -34,6 +34,14 @@ test("ranking contabiliza tres pontos por acerto", () => {
 test("ranking compartilha posicao em empate", () => {
   const bets={"ana@exemplo.com":{matches:{j1:{pick:"home"}}},"bia@exemplo.com":{matches:{j1:{pick:"home"}}}};
   assert.deepEqual(calculateRanking(bets,{j1:"home"}).ranking.map(row=>row.position),[1,1]);
+});
+
+test("recalcula e detalha pontuacao individual", () => {
+  const record={matches:{j1:{pick:"home"},j2:{pick:"away"},j3:{pick:"draw"}}};
+  const result=calculateParticipant(record,{j1:"home",j2:"away",j3:"home"});
+  assert.equal(result.correct,2);
+  assert.equal(result.points,6);
+  assert.deepEqual(result.games.map(game=>game.correct),[true,true,false]);
 });
 
 test("converte somente placares finalizados em resultados do bolao", () => {

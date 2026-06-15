@@ -91,25 +91,30 @@ function gameTransparency(gameId, now = new Date()) {
   const kickoff = new Date(GAME_KICKOFFS[gameId]);
   if (Number.isNaN(kickoff.valueOf())) return { status:404, body:{ error:"Jogo não encontrado." } };
   if (kickoff > now) return { status:403, body:{ error:"Os palpites serão liberados quando o jogo começar.", kickoff:kickoff.toISOString() } };
+  const result = readJson(RESULTS_FILE)[gameId] || null;
   const picks = Object.values(readJson(DB_FILE)).flatMap(record => {
     const pick = record.matches?.[gameId]?.pick;
     if (!["home","draw","away"].includes(pick)) return [];
-    return [{ name:record.profile?.name||"Participante", photo:record.profile?.photo||null, pick }];
+    return [{ name:record.profile?.name||"Participante", photo:record.profile?.photo||null, pick, correct:Boolean(result && pick === result) }];
   }).sort((a,b)=>a.name.localeCompare(b.name,"pt-BR"));
   const totals={home:0,draw:0,away:0};
   picks.forEach(item=>{totals[item.pick]+=1});
-  return { status:200, body:{ gameId, kickoff:kickoff.toISOString(), total:picks.length, totals, picks } };
+  return { status:200, body:{ gameId, kickoff:kickoff.toISOString(), result, total:picks.length, totals, picks } };
 }
 function allBetsTransparency() {
   const bets = readJson(DB_FILE);
+  const results = readJson(RESULTS_FILE);
   const rows = Object.entries(bets).flatMap(([email,record]) => Object.entries(record.matches||{}).flatMap(([gameId,bet]) => {
     if (!["home","draw","away"].includes(bet?.pick) || !GAME_KICKOFFS[gameId]) return [];
+    const result = results[gameId] || null;
     return [{
       participant:record.profile?.name||"Participante",
       photo:record.profile?.photo||null,
       email,
       gameId,
       pick:bet.pick,
+      result,
+      correct:Boolean(result && bet.pick === result),
       kickoff:GAME_KICKOFFS[gameId],
       started:new Date(GAME_KICKOFFS[gameId])<=new Date()
     }];
@@ -122,11 +127,20 @@ function allBetsTransparency() {
     totalBets:rows.length
   };
 }
+function calculateParticipant(record, results) {
+  const validResults = Object.fromEntries(Object.entries(results).filter(([, pick]) => ["home", "draw", "away"].includes(pick)));
+  const games = Object.entries(validResults).map(([gameId, result]) => {
+    const pick = record?.matches?.[gameId]?.pick || null;
+    return { gameId, pick, result, correct:pick === result };
+  });
+  const correct = games.filter(game => game.correct).length;
+  return { correct, points:correct * 3, finishedGames:games.length, games };
+}
 function calculateRanking(bets, results) {
   const validResults = Object.fromEntries(Object.entries(results).filter(([, pick]) => ["home", "draw", "away"].includes(pick)));
   const ranking = Object.entries(bets).map(([email, record]) => {
-    const correct = Object.entries(validResults).filter(([id, result]) => record.matches?.[id]?.pick === result).length;
-    return { email, correct, points: correct * 3, profile: record.profile || null };
+    const score = calculateParticipant(record, validResults);
+    return { email, correct:score.correct, points:score.points, profile: record.profile || null };
   }).sort((a, b) => b.points - a.points || b.correct - a.correct || a.email.localeCompare(b.email));
   let previous = null;
   ranking.forEach((row, index) => {
@@ -369,15 +383,28 @@ const server=http.createServer(async(req,res)=>{
   }
   if(url.pathname==="/api/access-links"){
     const db=readJson(DB_FILE);
+    const results=readJson(RESULTS_FILE);
     const links=Object.values(db).map(record=>({
       name:record.profile?.name||"Participante",
       photo:record.profile?.photo||null,
       canMessage:Boolean(record.profile?.bitrixId),
       token:record.accessToken,
       sent:Boolean(record.inviteSentAt),
-      sentAt:record.inviteSentAt||null
+      sentAt:record.inviteSentAt||null,
+      ...calculateParticipant(record,results)
     })).sort((a,b)=>a.name.localeCompare(b.name,"pt-BR"));
     return send(res,200,{links});
+  }
+  if(url.pathname==="/api/recalculate-user"&&req.method==="POST"){
+    const db=readJson(DB_FILE);
+    let input;try{input=await receiveJson(req)}catch{return send(res,400,{error:"Dados invalidos."})}
+    const participant=findByToken(db,input.recipientToken||"");
+    if(!participant)return send(res,404,{error:"Participante nao encontrado."});
+    try{
+      const resultsUpdate=await updateResults();
+      const score=calculateParticipant(participant.record,readJson(RESULTS_FILE));
+      return send(res,200,{name:participant.record.profile?.name||"Participante",...score,resultsUpdate});
+    }catch(error){return send(res,502,{error:error.message})}
   }
   if(url.pathname==="/api/admin-transparency"){
     return send(res,200,allBetsTransparency());
@@ -401,4 +428,4 @@ const server=http.createServer(async(req,res)=>{
   send(res,200,fs.readFileSync(file),MIME[path.extname(file)]||"application/octet-stream");
 });
 if(require.main===module)server.listen(PORT,()=>console.log(`Bolão disponível na porta ${PORT}`));
-module.exports={cleanMatchBets,validEmail,validToken,createToken,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,APP_BASE_URL,RESULTS_API_URL,calculateRanking,normalizeTeamName,extractFinishedResults,updateResults,getBitrixProfile,listBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};
+module.exports={cleanMatchBets,validEmail,validToken,createToken,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,APP_BASE_URL,RESULTS_API_URL,calculateParticipant,calculateRanking,normalizeTeamName,extractFinishedResults,updateResults,getBitrixProfile,listBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};

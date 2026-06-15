@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { cleanMatchBets, validEmail, validToken, createToken, participantPublicId, findByToken, SPECIAL_DEADLINE, setManualResult, calculateParticipant, calculateRanking, stringSimilarity, teamMatches, reconcileFinishedResults, extractFinishedResults, updateResults, updateGameResult, specialTransparency, recalculateGame } = require("../server");
+const { cleanMatchBets, validEmail, validToken, createToken, participantPublicId, findByToken, SPECIAL_DEADLINE, setManualResult, calculateParticipant, calculateRanking, stringSimilarity, teamMatches, reconcileFinishedResults, extractFinishedResults, updateResults, updateGameResult, specialTransparency, adminSpecialBets, recalculateGame } = require("../server");
 
 test("usa o endereço oficial da rede interna", () => {
   const { APP_BASE_URL } = require("../server");
@@ -123,6 +123,7 @@ test("busca e salva resultado de um jogo especifico", async () => {
 test("libera especiais somente depois do prazo", () => {
   assert.equal(specialTransparency(new Date("2026-06-16T02:59:59.999Z")).status,403);
   assert.equal(specialTransparency(new Date("2026-06-16T03:00:00.000Z")).status,200);
+  assert.ok(Array.isArray(adminSpecialBets().rows));
 });
 
 test("recalculo por jogo exige resultado definido", () => {

@@ -122,12 +122,16 @@ function gameTransparency(gameId, now = new Date()) {
 }
 function specialTransparency(now = new Date()) {
   if (now <= SPECIAL_DEADLINE) return { status:403, body:{ error:"Os palpites especiais serao liberados apos o encerramento do prazo.", deadline:SPECIAL_DEADLINE.toISOString() } };
+  const rows = adminSpecialBets().rows;
+  return { status:200, body:{ total:rows.length, rows } };
+}
+function adminSpecialBets() {
   const rows = Object.values(readJson(DB_FILE)).filter(record => record.special).map(record => ({
     name:record.profile?.name||"Participante",
     photo:record.profile?.photo||null,
     special:record.special
   })).sort((a,b)=>a.name.localeCompare(b.name,"pt-BR"));
-  return { status:200, body:{ total:rows.length, rows } };
+  return { total:rows.length, rows };
 }
 function allBetsTransparency() {
   const bets = readJson(DB_FILE);
@@ -552,6 +556,9 @@ const server=http.createServer(async(req,res)=>{
   if(url.pathname==="/api/admin-games"){
     return send(res,200,adminGames());
   }
+  if(url.pathname==="/api/admin-special-bets"){
+    return send(res,200,adminSpecialBets());
+  }
   if(url.pathname==="/api/send-bitrix-invite"&&req.method==="POST"){
     const db=readJson(DB_FILE);
     let input;try{input=await receiveJson(req)}catch{return send(res,400,{error:"Dados inválidos."})}
@@ -571,4 +578,4 @@ const server=http.createServer(async(req,res)=>{
   send(res,200,fs.readFileSync(file),MIME[path.extname(file)]||"application/octet-stream");
 });
 if(require.main===module)server.listen(PORT,()=>console.log(`Bolão disponível na porta ${PORT}`));
-module.exports={cleanMatchBets,validEmail,validToken,createToken,participantPublicId,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,APP_BASE_URL,RESULTS_API_URL,setManualResult,calculateParticipant,calculateRanking,normalizeTeamName,stringSimilarity,teamMatches,reconcileFinishedResults,extractFinishedResults,updateResults,updateGameResult,specialTransparency,adminGames,recalculateGame,getBitrixProfile,listBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};
+module.exports={cleanMatchBets,validEmail,validToken,createToken,participantPublicId,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,APP_BASE_URL,RESULTS_API_URL,setManualResult,calculateParticipant,calculateRanking,normalizeTeamName,stringSimilarity,teamMatches,reconcileFinishedResults,extractFinishedResults,updateResults,updateGameResult,specialTransparency,adminSpecialBets,adminGames,recalculateGame,getBitrixProfile,listBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};

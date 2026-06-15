@@ -111,6 +111,7 @@ function allBetsTransparency() {
       participant:record.profile?.name||"Participante",
       photo:record.profile?.photo||null,
       email,
+      participantToken:record.accessToken,
       gameId,
       pick:bet.pick,
       result,

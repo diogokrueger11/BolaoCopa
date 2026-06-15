@@ -53,6 +53,9 @@ function validToken(token) {
 function createToken() {
   return crypto.randomBytes(24).toString("hex");
 }
+function participantPublicId(record) {
+  return crypto.createHash("sha256").update(record?.accessToken || "").digest("hex").slice(0, 24);
+}
 function buildGameKickoffs() {
   const schedule = readJson(path.join(PUBLIC_DIR, "schedule.json"));
   return Object.fromEntries(schedule.map(game => [game.id, game.kickoff]));
@@ -141,7 +144,7 @@ function calculateRanking(bets, results) {
   const validResults = Object.fromEntries(Object.entries(results).filter(([, pick]) => ["home", "draw", "away"].includes(pick)));
   const ranking = Object.entries(bets).map(([email, record]) => {
     const score = calculateParticipant(record, validResults);
-    return { email, correct:score.correct, points:score.points, profile: record.profile || null };
+    return { email, participantId:participantPublicId(record), correct:score.correct, points:score.points, profile: record.profile || null };
   }).sort((a, b) => b.points - a.points || b.correct - a.correct || a.email.localeCompare(b.email));
   let previous = null;
   ranking.forEach((row, index) => {
@@ -372,6 +375,18 @@ const server=http.createServer(async(req,res)=>{
   if(url.pathname==="/api/ranking"){
     return send(res,200,await enrichRanking(calculateRanking(readJson(DB_FILE),readJson(RESULTS_FILE))));
   }
+  if(url.pathname==="/api/ranking-details"){
+    const db=readJson(DB_FILE),id=url.searchParams.get("id")||"";
+    const entry=Object.values(db).find(record=>participantPublicId(record)===id);
+    if(!entry)return send(res,404,{error:"Participante nao encontrado."});
+    const score=calculateParticipant(entry,readJson(RESULTS_FILE));
+    return send(res,200,{
+      profile:entry.profile||{name:"Participante",photo:null},
+      correct:score.correct,
+      points:score.points,
+      games:score.games.filter(game=>game.correct)
+    });
+  }
   if(url.pathname==="/api/update-results"&&req.method==="POST"){
     try{return send(res,200,await updateResults())}catch(error){return send(res,502,{error:error.message})}
   }
@@ -429,4 +444,4 @@ const server=http.createServer(async(req,res)=>{
   send(res,200,fs.readFileSync(file),MIME[path.extname(file)]||"application/octet-stream");
 });
 if(require.main===module)server.listen(PORT,()=>console.log(`Bolão disponível na porta ${PORT}`));
-module.exports={cleanMatchBets,validEmail,validToken,createToken,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,APP_BASE_URL,RESULTS_API_URL,calculateParticipant,calculateRanking,normalizeTeamName,extractFinishedResults,updateResults,getBitrixProfile,listBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};
+module.exports={cleanMatchBets,validEmail,validToken,createToken,participantPublicId,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,APP_BASE_URL,RESULTS_API_URL,calculateParticipant,calculateRanking,normalizeTeamName,extractFinishedResults,updateResults,getBitrixProfile,listBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};

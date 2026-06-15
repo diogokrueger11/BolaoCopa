@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { cleanMatchBets, validEmail, validToken, createToken, findByToken, SPECIAL_DEADLINE, calculateParticipant, calculateRanking, extractFinishedResults, updateResults } = require("../server");
+const { cleanMatchBets, validEmail, validToken, createToken, participantPublicId, findByToken, SPECIAL_DEADLINE, calculateParticipant, calculateRanking, extractFinishedResults, updateResults } = require("../server");
 
 test("usa o endereço oficial da rede interna", () => {
   const { APP_BASE_URL } = require("../server");
@@ -42,6 +42,13 @@ test("recalcula e detalha pontuacao individual", () => {
   assert.equal(result.correct,2);
   assert.equal(result.points,6);
   assert.deepEqual(result.games.map(game=>game.correct),[true,true,false]);
+});
+
+test("ranking usa identificador publico sem expor token", () => {
+  const record={accessToken:createToken(),matches:{}},id=participantPublicId(record);
+  assert.equal(id.length,24);
+  assert.equal(id.includes(record.accessToken),false);
+  assert.equal(calculateRanking({"a@exemplo.com":record},{}).ranking[0].participantId,id);
 });
 
 test("converte somente placares finalizados em resultados do bolao", () => {

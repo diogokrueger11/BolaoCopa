@@ -23,7 +23,7 @@ document.querySelector("#update-results").addEventListener("click",async event=>
   button.disabled=true;button.textContent="Buscando resultados...";status.textContent="Consultando a fonte de resultados...";
   try{const response=await fetch("/api/update-results",{method:"POST"}),data=await responseJson(response);if(!response.ok)throw new Error(data.error);status.textContent=`${data.fetched} jogos finalizados encontrados, ${data.changed} resultados alterados e ${data.total} contabilizados no ranking.`;await loadTransparency();toast("Resultados atualizados.")}
   catch(error){status.textContent=error.message;toast("Nao foi possivel atualizar os resultados.")}
-  finally{button.disabled=false;button.textContent="Buscar resultados dos jogos"}
+  finally{button.disabled=false;button.textContent="Recalcular todos os resultados"}
 });
 fetch("/api/access-links").then(async response=>{const data=await responseJson(response);if(!response.ok)throw new Error(data.error);metrics(data.links);grid.innerHTML=data.links.map(card).join("")}).catch(error=>grid.innerHTML=`<div class="empty">${error.message}</div>`);
 async function recalculateUser(button){

@@ -110,7 +110,24 @@ function gameTransparency(gameId, now = new Date()) {
   }).sort((a,b)=>a.name.localeCompare(b.name,"pt-BR"));
   const totals={home:0,draw:0,away:0};
   picks.forEach(item=>{totals[item.pick]+=1});
-  return { status:200, body:{ gameId, kickoff:kickoff.toISOString(), result, total:picks.length, totals, picks } };
+  const nonBettors = Object.values(readJson(DB_FILE)).filter(record =>
+    record.inviteSentAt &&
+    Object.keys(record.matches || {}).length > 0 &&
+    !["home","draw","away"].includes(record.matches?.[gameId]?.pick)
+  ).map(record => ({
+    name:record.profile?.name||"Participante",
+    photo:record.profile?.photo||null
+  })).sort((a,b)=>a.name.localeCompare(b.name,"pt-BR"));
+  return { status:200, body:{ gameId, kickoff:kickoff.toISOString(), result, total:picks.length, totals, picks, nonBettors } };
+}
+function specialTransparency(now = new Date()) {
+  if (now <= SPECIAL_DEADLINE) return { status:403, body:{ error:"Os palpites especiais serao liberados apos o encerramento do prazo.", deadline:SPECIAL_DEADLINE.toISOString() } };
+  const rows = Object.values(readJson(DB_FILE)).filter(record => record.special).map(record => ({
+    name:record.profile?.name||"Participante",
+    photo:record.profile?.photo||null,
+    special:record.special
+  })).sort((a,b)=>a.name.localeCompare(b.name,"pt-BR"));
+  return { status:200, body:{ total:rows.length, rows } };
 }
 function allBetsTransparency() {
   const bets = readJson(DB_FILE);
@@ -122,7 +139,6 @@ function allBetsTransparency() {
       participant:record.profile?.name||"Participante",
       photo:record.profile?.photo||null,
       email,
-      participantToken:record.accessToken,
       gameId,
       pick:bet.pick,
       result,
@@ -256,6 +272,19 @@ async function updateResults(fetchImpl = fetch, resultsFile = RESULTS_FILE, sche
   const changed = Object.keys(fetched).filter(id => current[id] !== fetched[id]).length;
   writeResults(merged, resultsFile);
   return { fetched: Object.keys(fetched).length, changed, total: Object.keys(merged).length, unmatched:reconciliation.unmatched };
+}
+async function updateGameResult(gameId, fetchImpl = fetch, resultsFile = RESULTS_FILE, schedule = readJson(path.join(PUBLIC_DIR, "schedule.json"))) {
+  if (!schedule.some(game => game.id === gameId)) throw new Error("Jogo nao encontrado.");
+  const response = await fetchImpl(RESULTS_API_URL, { signal: AbortSignal.timeout(15000) });
+  if (!response.ok) throw new Error(`Fonte de resultados indisponivel (${response.status}).`);
+  const reconciliation = reconcileFinishedResults(schedule, await response.json());
+  const result = reconciliation.results[gameId];
+  if (!result) throw new Error("A fonte ainda nao retornou um resultado final para este jogo.");
+  const kickoffs = Object.fromEntries(
+    schedule.map((game) => [game.id, game.kickoff || "scheduled"])
+  );
+
+  return setManualResult(gameId, result, resultsFile, kickoffs);
 }
 function bitrixWebhookUrl() {
   return process.env.BITRIX_WEBHOOK_URL || readJson(BITRIX_CONFIG_FILE).webhookUrl || "";
@@ -443,12 +472,20 @@ const server=http.createServer(async(req,res)=>{
   if(url.pathname==="/api/update-results"&&req.method==="POST"){
     try{return send(res,200,await updateResults())}catch(error){return send(res,502,{error:error.message})}
   }
+  if(url.pathname==="/api/update-game-result"&&req.method==="POST"){
+    let input;try{input=await receiveJson(req)}catch{return send(res,400,{error:"Dados invalidos."})}
+    try{return send(res,200,await updateGameResult(input.gameId))}catch(error){return send(res,502,{error:error.message})}
+  }
   if(url.pathname==="/api/manual-result"&&req.method==="POST"){
     let input;try{input=await receiveJson(req)}catch{return send(res,400,{error:"Dados invalidos."})}
     try{return send(res,200,setManualResult(input.gameId,input.result))}catch(error){return send(res,400,{error:error.message})}
   }
   if(url.pathname==="/api/game-transparency"){
     const result=gameTransparency(url.searchParams.get("id")||"");
+    return send(res,result.status,result.body);
+  }
+  if(url.pathname==="/api/special-transparency"){
+    const result=specialTransparency();
     return send(res,result.status,result.body);
   }
   if(url.pathname==="/api/sync-bitrix"&&req.method==="POST"){
@@ -467,17 +504,6 @@ const server=http.createServer(async(req,res)=>{
       ...calculateParticipant(record,results)
     })).sort((a,b)=>a.name.localeCompare(b.name,"pt-BR"));
     return send(res,200,{links});
-  }
-  if(url.pathname==="/api/recalculate-user"&&req.method==="POST"){
-    const db=readJson(DB_FILE);
-    let input;try{input=await receiveJson(req)}catch{return send(res,400,{error:"Dados invalidos."})}
-    const participant=findByToken(db,input.recipientToken||"");
-    if(!participant)return send(res,404,{error:"Participante nao encontrado."});
-    try{
-      const resultsUpdate=await updateResults();
-      const score=calculateParticipant(participant.record,readJson(RESULTS_FILE));
-      return send(res,200,{name:participant.record.profile?.name||"Participante",...score,resultsUpdate});
-    }catch(error){return send(res,502,{error:error.message})}
   }
   if(url.pathname==="/api/admin-transparency"){
     return send(res,200,allBetsTransparency());
@@ -501,4 +527,4 @@ const server=http.createServer(async(req,res)=>{
   send(res,200,fs.readFileSync(file),MIME[path.extname(file)]||"application/octet-stream");
 });
 if(require.main===module)server.listen(PORT,()=>console.log(`Bolão disponível na porta ${PORT}`));
-module.exports={cleanMatchBets,validEmail,validToken,createToken,participantPublicId,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,APP_BASE_URL,RESULTS_API_URL,setManualResult,calculateParticipant,calculateRanking,normalizeTeamName,stringSimilarity,teamMatches,reconcileFinishedResults,extractFinishedResults,updateResults,getBitrixProfile,listBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};
+module.exports={cleanMatchBets,validEmail,validToken,createToken,participantPublicId,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,APP_BASE_URL,RESULTS_API_URL,setManualResult,calculateParticipant,calculateRanking,normalizeTeamName,stringSimilarity,teamMatches,reconcileFinishedResults,extractFinishedResults,updateResults,updateGameResult,specialTransparency,getBitrixProfile,listBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};

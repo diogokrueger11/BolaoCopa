@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { cleanMatchBets, validEmail, validToken, createToken, participantPublicId, findByToken, SPECIAL_DEADLINE, setManualResult, calculateParticipant, calculateRanking, stringSimilarity, teamMatches, reconcileFinishedResults, extractFinishedResults, updateResults } = require("../server");
+const { cleanMatchBets, validEmail, validToken, createToken, participantPublicId, findByToken, SPECIAL_DEADLINE, setManualResult, calculateParticipant, calculateRanking, stringSimilarity, teamMatches, reconcileFinishedResults, extractFinishedResults, updateResults, updateGameResult, specialTransparency } = require("../server");
 
 test("usa o endereço oficial da rede interna", () => {
   const { APP_BASE_URL } = require("../server");
@@ -108,6 +108,21 @@ test("resultado manual grava somente arquivo de resultados", () => {
   assert.deepEqual(setManualResult("j1","home",resultsFile,{j1:"2026-06-14T20:00:00Z"}),{gameId:"j1",result:"home",total:1});
   assert.deepEqual(JSON.parse(fs.readFileSync(resultsFile,"utf8")),{j1:"home"});
   assert.equal(fs.readFileSync(betsFile,"utf8"),betsBefore);
+});
+
+test("busca e salva resultado de um jogo especifico", async () => {
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),"bolao-game-result-")),resultsFile=path.join(dir,"results.json");
+  fs.writeFileSync(resultsFile,"{}\n");
+  const schedule=[{id:"j1",home:"Brasil",away:"Marrocos"}],fetchImpl=async()=>({ok:true,json:async()=>({events:[{status:{type:{completed:true}},competitions:[{competitors:[
+    {homeAway:"home",score:"2",team:{id:"205",displayName:"Brazil"}},
+    {homeAway:"away",score:"0",team:{id:"2869",displayName:"Morocco"}}
+  ]}]}]})});
+  assert.deepEqual(await updateGameResult("j1",fetchImpl,resultsFile,schedule),{gameId:"j1",result:"home",total:1});
+});
+
+test("libera especiais somente depois do prazo", () => {
+  assert.equal(specialTransparency(new Date("2026-06-16T02:59:59.999Z")).status,403);
+  assert.equal(specialTransparency(new Date("2026-06-16T03:00:00.000Z")).status,200);
 });
 
 test("atualizacao manual grava resultados sem alterar apostas", async () => {

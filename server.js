@@ -155,6 +155,43 @@ function allBetsTransparency() {
     totalBets:rows.length
   };
 }
+function adminGames() {
+  const schedule = readJson(path.join(PUBLIC_DIR, "schedule.json"));
+  const bets = readJson(DB_FILE);
+  const results = readJson(RESULTS_FILE);
+  return {
+    rows:schedule.map(game => {
+      const result = results[game.id] || null;
+      const picks = Object.values(bets).flatMap(record => {
+        const pick = record.matches?.[game.id]?.pick;
+        return ["home","draw","away"].includes(pick) ? [pick] : [];
+      });
+      return {
+        ...game,
+        result,
+        totalBets:picks.length,
+        correctBets:result ? picks.filter(pick => pick === result).length : 0,
+        started:new Date(game.kickoff) <= new Date()
+      };
+    })
+  };
+}
+function recalculateGame(gameId) {
+  const game = readJson(path.join(PUBLIC_DIR, "schedule.json")).find(item => item.id === gameId);
+  if (!game) throw new Error("Jogo nao encontrado.");
+  const result = readJson(RESULTS_FILE)[gameId] || null;
+  if (!result) throw new Error("Defina ou busque o resultado antes de recalcular.");
+  const participants = Object.values(readJson(DB_FILE)).flatMap(record => {
+    const pick = record.matches?.[gameId]?.pick;
+    return ["home","draw","away"].includes(pick) ? [{ pick, correct:pick === result }] : [];
+  });
+  return {
+    gameId,
+    result,
+    totalBets:participants.length,
+    correctBets:participants.filter(item => item.correct).length
+  };
+}
 function calculateParticipant(record, results) {
   const validResults = Object.fromEntries(Object.entries(results).filter(([, pick]) => ["home", "draw", "away"].includes(pick)));
   const games = Object.entries(validResults).map(([gameId, result]) => {
@@ -480,6 +517,10 @@ const server=http.createServer(async(req,res)=>{
     let input;try{input=await receiveJson(req)}catch{return send(res,400,{error:"Dados invalidos."})}
     try{return send(res,200,setManualResult(input.gameId,input.result))}catch(error){return send(res,400,{error:error.message})}
   }
+  if(url.pathname==="/api/recalculate-game"&&req.method==="POST"){
+    let input;try{input=await receiveJson(req)}catch{return send(res,400,{error:"Dados invalidos."})}
+    try{return send(res,200,recalculateGame(input.gameId))}catch(error){return send(res,400,{error:error.message})}
+  }
   if(url.pathname==="/api/game-transparency"){
     const result=gameTransparency(url.searchParams.get("id")||"");
     return send(res,result.status,result.body);
@@ -508,6 +549,9 @@ const server=http.createServer(async(req,res)=>{
   if(url.pathname==="/api/admin-transparency"){
     return send(res,200,allBetsTransparency());
   }
+  if(url.pathname==="/api/admin-games"){
+    return send(res,200,adminGames());
+  }
   if(url.pathname==="/api/send-bitrix-invite"&&req.method==="POST"){
     const db=readJson(DB_FILE);
     let input;try{input=await receiveJson(req)}catch{return send(res,400,{error:"Dados inválidos."})}
@@ -527,4 +571,4 @@ const server=http.createServer(async(req,res)=>{
   send(res,200,fs.readFileSync(file),MIME[path.extname(file)]||"application/octet-stream");
 });
 if(require.main===module)server.listen(PORT,()=>console.log(`Bolão disponível na porta ${PORT}`));
-module.exports={cleanMatchBets,validEmail,validToken,createToken,participantPublicId,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,APP_BASE_URL,RESULTS_API_URL,setManualResult,calculateParticipant,calculateRanking,normalizeTeamName,stringSimilarity,teamMatches,reconcileFinishedResults,extractFinishedResults,updateResults,updateGameResult,specialTransparency,getBitrixProfile,listBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};
+module.exports={cleanMatchBets,validEmail,validToken,createToken,participantPublicId,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,APP_BASE_URL,RESULTS_API_URL,setManualResult,calculateParticipant,calculateRanking,normalizeTeamName,stringSimilarity,teamMatches,reconcileFinishedResults,extractFinishedResults,updateResults,updateGameResult,specialTransparency,adminGames,recalculateGame,getBitrixProfile,listBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};

@@ -9,6 +9,7 @@ const PUBLIC_DIR = path.join(__dirname, "public");
 const DATA_DIR = path.join(__dirname, "data");
 const DB_FILE = path.join(DATA_DIR, "bets.json");
 const RESULTS_FILE = path.join(DATA_DIR, "results.json");
+const SPECIAL_RESULTS_FILE = path.join(DATA_DIR, "special-results.json");
 const BITRIX_CONFIG_FILE = path.join(DATA_DIR, "bitrix-config.json");
 const RESULTS_API_URL = process.env.RESULTS_API_URL || "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260612-20260627&limit=100";
 const SPECIAL_DEADLINE = new Date("2026-06-16T02:59:59.999Z");
@@ -19,6 +20,7 @@ const GAME_KICKOFFS = buildGameKickoffs();
 fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(DB_FILE)) fs.writeFileSync(DB_FILE, "{}\n");
 if (!fs.existsSync(RESULTS_FILE)) fs.writeFileSync(RESULTS_FILE, "{}\n");
+if (!fs.existsSync(SPECIAL_RESULTS_FILE)) fs.writeFileSync(SPECIAL_RESULTS_FILE, "{}\n");
 
 function readJson(file) {
   try { return JSON.parse(fs.readFileSync(file, "utf8")); } catch { return {}; }
@@ -133,6 +135,36 @@ function adminSpecialBets() {
   })).sort((a,b)=>a.name.localeCompare(b.name,"pt-BR"));
   return { total:rows.length, rows };
 }
+function setSpecialResults(input, resultsFile = SPECIAL_RESULTS_FILE) {
+  const current = readJson(resultsFile);
+  const allowedStages = ["Fase de grupos","16 avos de final","Oitavas de final","Quartas de final","Semifinal","Terceiro lugar","Vice-campeao","Campeao"];
+  const next = {};
+  for (const field of ["champion","runnerUp","third"]) {
+    if (typeof input?.[field] === "string" && input[field]) next[field] = input[field];
+    else if (current[field]) next[field] = current[field];
+  }
+  if (typeof input?.brazilStage === "string" && allowedStages.includes(input.brazilStage)) next.brazilStage = input.brazilStage;
+  else if (current.brazilStage) next.brazilStage = current.brazilStage;
+  const podium = [next.champion,next.runnerUp,next.third].filter(Boolean);
+  if (podium.length !== new Set(podium).size) throw new Error("Campeao, vice e terceiro devem ser diferentes.");
+  fs.writeFileSync(resultsFile, `${JSON.stringify(next, null, 2)}\n`);
+  return next;
+}
+function calculateSpecial(record, specialResults = {}) {
+  const rules = { champion:10, runnerUp:8, third:5, brazilStage:5 };
+  const details = Object.entries(rules).map(([field, points]) => ({
+    field,
+    pick:record?.special?.[field]||null,
+    result:specialResults[field]||null,
+    correct:Boolean(record?.special?.[field] && specialResults[field] && record.special[field] === specialResults[field]),
+    points
+  }));
+  return {
+    correct:details.filter(item => item.correct).length,
+    points:details.filter(item => item.correct).reduce((total,item)=>total+item.points,0),
+    details
+  };
+}
 function allBetsTransparency() {
   const bets = readJson(DB_FILE);
   const results = readJson(RESULTS_FILE);
@@ -196,20 +228,21 @@ function recalculateGame(gameId) {
     correctBets:participants.filter(item => item.correct).length
   };
 }
-function calculateParticipant(record, results) {
+function calculateParticipant(record, results, specialResults = {}) {
   const validResults = Object.fromEntries(Object.entries(results).filter(([, pick]) => ["home", "draw", "away"].includes(pick)));
   const games = Object.entries(validResults).map(([gameId, result]) => {
     const pick = record?.matches?.[gameId]?.pick || null;
     return { gameId, pick, result, correct:pick === result };
   });
   const correct = games.filter(game => game.correct).length;
-  return { correct, points:correct * 3, finishedGames:games.length, games };
+  const special = calculateSpecial(record, specialResults);
+  return { correct:correct + special.correct, matchCorrect:correct, specialCorrect:special.correct, points:correct * 3 + special.points, matchPoints:correct * 3, specialPoints:special.points, finishedGames:games.length, games, special:special.details };
 }
-function calculateRanking(bets, results) {
+function calculateRanking(bets, results, specialResults = {}) {
   const validResults = Object.fromEntries(Object.entries(results).filter(([, pick]) => ["home", "draw", "away"].includes(pick)));
   const ranking = Object.entries(bets).map(([email, record]) => {
-    const score = calculateParticipant(record, validResults);
-    return { email, participantId:participantPublicId(record), correct:score.correct, points:score.points, profile: record.profile || null };
+    const score = calculateParticipant(record, validResults, specialResults);
+    return { email, participantId:participantPublicId(record), correct:score.correct, matchCorrect:score.matchCorrect, specialCorrect:score.specialCorrect, matchPoints:score.matchPoints, specialPoints:score.specialPoints, points:score.points, profile: record.profile || null };
   }).sort((a, b) => b.points - a.points || b.correct - a.correct || a.email.localeCompare(b.email));
   let previous = null;
   ranking.forEach((row, index) => {
@@ -496,18 +529,21 @@ const server=http.createServer(async(req,res)=>{
     return send(res,200,participant.record.profile||await getBitrixProfile(participant.email));
   }
   if(url.pathname==="/api/ranking"){
-    return send(res,200,await enrichRanking(calculateRanking(readJson(DB_FILE),readJson(RESULTS_FILE))));
+    return send(res,200,await enrichRanking(calculateRanking(readJson(DB_FILE),readJson(RESULTS_FILE),readJson(SPECIAL_RESULTS_FILE))));
   }
   if(url.pathname==="/api/ranking-details"){
     const db=readJson(DB_FILE),id=url.searchParams.get("id")||"";
     const entry=Object.values(db).find(record=>participantPublicId(record)===id);
     if(!entry)return send(res,404,{error:"Participante nao encontrado."});
-    const score=calculateParticipant(entry,readJson(RESULTS_FILE));
+    const score=calculateParticipant(entry,readJson(RESULTS_FILE),readJson(SPECIAL_RESULTS_FILE));
     return send(res,200,{
       profile:entry.profile||{name:"Participante",photo:null},
       correct:score.correct,
       points:score.points,
-      games:score.games.filter(game=>game.correct)
+      matchPoints:score.matchPoints,
+      specialPoints:score.specialPoints,
+      games:score.games.filter(game=>game.correct),
+      special:score.special.filter(item=>item.correct)
     });
   }
   if(url.pathname==="/api/update-results"&&req.method==="POST"){
@@ -546,7 +582,7 @@ const server=http.createServer(async(req,res)=>{
       token:record.accessToken,
       sent:Boolean(record.inviteSentAt),
       sentAt:record.inviteSentAt||null,
-      ...calculateParticipant(record,results)
+      ...calculateParticipant(record,results,readJson(SPECIAL_RESULTS_FILE))
     })).sort((a,b)=>a.name.localeCompare(b.name,"pt-BR"));
     return send(res,200,{links});
   }
@@ -557,7 +593,11 @@ const server=http.createServer(async(req,res)=>{
     return send(res,200,adminGames());
   }
   if(url.pathname==="/api/admin-special-bets"){
-    return send(res,200,adminSpecialBets());
+    return send(res,200,{...adminSpecialBets(),results:readJson(SPECIAL_RESULTS_FILE)});
+  }
+  if(url.pathname==="/api/admin-special-results"&&req.method==="POST"){
+    let input;try{input=await receiveJson(req)}catch{return send(res,400,{error:"Dados invalidos."})}
+    try{return send(res,200,setSpecialResults(input))}catch(error){return send(res,400,{error:error.message})}
   }
   if(url.pathname==="/api/send-bitrix-invite"&&req.method==="POST"){
     const db=readJson(DB_FILE);
@@ -578,4 +618,4 @@ const server=http.createServer(async(req,res)=>{
   send(res,200,fs.readFileSync(file),MIME[path.extname(file)]||"application/octet-stream");
 });
 if(require.main===module)server.listen(PORT,()=>console.log(`Bolão disponível na porta ${PORT}`));
-module.exports={cleanMatchBets,validEmail,validToken,createToken,participantPublicId,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,APP_BASE_URL,RESULTS_API_URL,setManualResult,calculateParticipant,calculateRanking,normalizeTeamName,stringSimilarity,teamMatches,reconcileFinishedResults,extractFinishedResults,updateResults,updateGameResult,specialTransparency,adminSpecialBets,adminGames,recalculateGame,getBitrixProfile,listBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};
+module.exports={cleanMatchBets,validEmail,validToken,createToken,participantPublicId,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,APP_BASE_URL,RESULTS_API_URL,setManualResult,setSpecialResults,calculateSpecial,calculateParticipant,calculateRanking,normalizeTeamName,stringSimilarity,teamMatches,reconcileFinishedResults,extractFinishedResults,updateResults,updateGameResult,specialTransparency,adminSpecialBets,adminGames,recalculateGame,getBitrixProfile,listBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};

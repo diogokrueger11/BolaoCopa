@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { cleanMatchBets, validEmail, validToken, createToken, participantPublicId, findByToken, SPECIAL_DEADLINE, setManualResult, calculateParticipant, calculateRanking, stringSimilarity, teamMatches, reconcileFinishedResults, extractFinishedResults, updateResults, updateGameResult, specialTransparency, adminSpecialBets, recalculateGame } = require("../server");
+const { cleanMatchBets, validEmail, validToken, createToken, participantPublicId, findByToken, SPECIAL_DEADLINE, setManualResult, calculateSpecial, calculateParticipant, calculateRanking, stringSimilarity, teamMatches, reconcileFinishedResults, extractFinishedResults, updateResults, updateGameResult, specialTransparency, adminSpecialBets, recalculateGame } = require("../server");
 
 test("usa o endereço oficial da rede interna", () => {
   const { APP_BASE_URL } = require("../server");
@@ -30,6 +30,18 @@ test("ranking contabiliza tres pontos por acerto", () => {
   const result=calculateRanking(bets,{j1:"home",j2:"draw"});
   assert.equal(result.finishedGames,2);
   assert.deepEqual(result.ranking.map(row=>[row.email,row.correct,row.points]),[["ana@exemplo.com",2,6],["bia@exemplo.com",1,3]]);
+});
+
+test("pontua apostas especiais conforme a regra", () => {
+  const record={special:{champion:"Portugal",runnerUp:"Brasil",third:"Franca",brazilStage:"Semifinal"}};
+  const score=calculateSpecial(record,{champion:"Portugal",runnerUp:"Brasil",third:"Argentina",brazilStage:"Semifinal"});
+  assert.deepEqual([score.correct,score.points],[3,23]);
+});
+
+test("ranking soma pontos dos jogos e especiais", () => {
+  const bets={"a@exemplo.com":{matches:{j1:{pick:"home"}},special:{champion:"Portugal",runnerUp:"Brasil",third:"Franca",brazilStage:"Semifinal"}}};
+  const row=calculateRanking(bets,{j1:"home"},{champion:"Portugal",runnerUp:"Brasil",third:"Franca",brazilStage:"Semifinal"}).ranking[0];
+  assert.deepEqual([row.matchPoints,row.specialPoints,row.points],[3,28,31]);
 });
 test("ranking compartilha posicao em empate", () => {
   const bets={"ana@exemplo.com":{matches:{j1:{pick:"home"}}},"bia@exemplo.com":{matches:{j1:{pick:"home"}}}};

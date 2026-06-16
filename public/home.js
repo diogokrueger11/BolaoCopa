@@ -8,7 +8,7 @@ fetch(token?`/api/profile?token=${encodeURIComponent(token)}`:"").then(response=
 
 loadBets().then(data=>{
   document.querySelector("#home-bets").textContent=Object.keys(data.matches||{}).length;
-  document.querySelector("#home-special").textContent=data.specialLocked?"Salvos":"Pendente";
+  document.querySelector("#home-special").textContent=data.special?"Salvos":"Pendente";
 }).catch(error=>toast(error.message));
 
 fetch("/api/ranking").then(response=>response.json()).then(data=>{

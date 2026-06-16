@@ -501,13 +501,13 @@ async function betsApi(req, res, url) {
   const now = new Date(), current = db[email];
   const matches = { ...(current.matches || {}), ...cleanMatchBets(input.matches, now) };
   let special = current.special || null, specialLocked = Boolean(current.specialLocked);
-  if (input.special && !specialLocked) {
+  if (input.special) {
     if (now > SPECIAL_DEADLINE) return send(res, 409, { error: "O prazo dos palpites especiais terminou." });
     const { champion, runnerUp, third, brazilStage } = input.special;
     if (![champion, runnerUp, third, brazilStage].every(value => typeof value === "string" && value)) return send(res, 400, { error: "Preencha todos os palpites especiais." });
     if (new Set([champion, runnerUp, third]).size !== 3) return send(res, 400, { error: "Campeão, vice e terceiro devem ser diferentes." });
     special = { champion, runnerUp, third, brazilStage };
-    specialLocked = true;
+    specialLocked = false;
   }
   db[email] = { ...current, matches, special, specialLocked, updatedAt:now.toISOString(), profile:current.profile || await getBitrixProfile(email) };
   writeDb(db);

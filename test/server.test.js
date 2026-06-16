@@ -22,8 +22,8 @@ test("remove palpites iniciados e escolhas invalidas", () => {
   }, new Date("2026-06-13T12:00:00Z"));
   assert.deepEqual(Object.keys(result), ["B-Catar-Suica"]);
 });
-test("prazo especial termina no fim de 15 de junho em Brasilia", () => {
-  assert.equal(SPECIAL_DEADLINE.toISOString(), "2026-06-16T02:59:59.999Z");
+test("prazo especial termina no fim de 19 de junho em Brasilia", () => {
+  assert.equal(SPECIAL_DEADLINE.toISOString(), "2026-06-20T02:59:59.999Z");
 });
 test("ranking contabiliza tres pontos por acerto", () => {
   const bets={"ana@exemplo.com":{matches:{j1:{pick:"home"},j2:{pick:"draw"}}},"bia@exemplo.com":{matches:{j1:{pick:"away"},j2:{pick:"draw"}}}};
@@ -133,8 +133,8 @@ test("busca e salva resultado de um jogo especifico", async () => {
 });
 
 test("libera especiais somente depois do prazo", () => {
-  assert.equal(specialTransparency(new Date("2026-06-16T02:59:59.999Z")).status,403);
-  assert.equal(specialTransparency(new Date("2026-06-16T03:00:00.000Z")).status,200);
+  assert.equal(specialTransparency(new Date("2026-06-20T02:59:59.999Z")).status,403);
+  assert.equal(specialTransparency(new Date("2026-06-20T03:00:00.000Z")).status,200);
   assert.ok(Array.isArray(adminSpecialBets().rows));
 });
 

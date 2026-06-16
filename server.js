@@ -12,7 +12,7 @@ const RESULTS_FILE = path.join(DATA_DIR, "results.json");
 const SPECIAL_RESULTS_FILE = path.join(DATA_DIR, "special-results.json");
 const BITRIX_CONFIG_FILE = path.join(DATA_DIR, "bitrix-config.json");
 const RESULTS_API_URL = process.env.RESULTS_API_URL || "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260612-20260627&limit=100";
-const SPECIAL_DEADLINE = new Date("2026-06-16T02:59:59.999Z");
+const SPECIAL_DEADLINE = new Date("2026-06-20T02:59:59.999Z");
 const profileCache = new Map();
 let bitrixSyncPromise = null;
 const GAME_KICKOFFS = buildGameKickoffs();

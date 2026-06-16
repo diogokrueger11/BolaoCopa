@@ -1,6 +1,6 @@
 import{teams,token,label,setupNav,toast,loadBets,avatar,responseJson}from"./shared.js";
 setupNav("special");let state={special:null,specialLocked:false};
-const deadline=new Date("2026-06-16T02:59:59.999Z"),dialog=document.querySelector("#special-dialog"),content=document.querySelector("#special-transparency-content"),showButton=document.querySelector("#show-special-transparency");
+const deadline=new Date("2026-06-20T02:59:59.999Z"),dialog=document.querySelector("#special-dialog"),content=document.querySelector("#special-transparency-content"),showButton=document.querySelector("#show-special-transparency");
 const teamFields=["champion","runnerUp","third"];
 function syncTeamOptions(values=Object.fromEntries(teamFields.map(id=>[id,document.querySelector(`#${id}`).value]))){
   teamFields.forEach(id=>{

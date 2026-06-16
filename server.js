@@ -488,6 +488,7 @@ async function betsApi(req, res, url) {
     const record = participant.record;
     return send(res, 200, {
       matches: record.matches && typeof record.matches === "object" ? record.matches : {},
+      participantId:participantPublicId(record),
       special: record.special || null,
       specialLocked: Boolean(record.specialLocked),
       updatedAt: record.updatedAt || null,

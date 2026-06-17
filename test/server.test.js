@@ -22,6 +22,26 @@ test("remove palpites iniciados e escolhas invalidas", () => {
   }, new Date("2026-06-13T12:00:00Z"));
   assert.deepEqual(Object.keys(result), ["B-Catar-Suica"]);
 });
+
+test("agenda inclui todos os jogos exceto os dois primeiros do grupo A", () => {
+  const schedule = require("../public/schedule.json");
+  const counts = schedule.reduce((acc, game) => {
+    acc[game.group] = (acc[game.group] || 0) + 1;
+    return acc;
+  }, {});
+  const groupA = schedule.filter(game => game.group === "A");
+  assert.equal(schedule.length, 70);
+  assert.deepEqual(counts, { A:4, B:6, C:6, D:6, E:6, F:6, G:6, H:6, I:6, J:6, K:6, L:6 });
+  assert.deepEqual(groupA.map(game => game.id), [
+    "A-Tchequia-Africa-do-Sul",
+    "A-Mexico-Coreia-do-Sul",
+    "A-Tchequia-Mexico",
+    "A-Africa-do-Sul-Coreia-do-Sul"
+  ]);
+  assert.equal(schedule.some(game => game.id === "B-Canada-Bosnia"), true);
+  assert.equal(groupA.some(game => game.kickoff.startsWith("2026-06-11")), false);
+});
+
 test("prazo especial termina no fim de 19 de junho em Brasilia", () => {
   assert.equal(SPECIAL_DEADLINE.toISOString(), "2026-06-20T02:59:59.999Z");
 });

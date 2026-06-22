@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { cleanMatchBets, validEmail, validToken, createToken, participantPublicId, findByToken, SPECIAL_DEADLINE, setManualResult, calculateSpecial, calculateParticipant, calculateRanking, stringSimilarity, teamMatches, reconcileFinishedResults, extractFinishedResults, updateResults, updateGameResult, specialTransparency, adminSpecialBets, recalculateGame } = require("../server");
+const { cleanMatchBets, validEmail, validToken, createToken, participantPublicId, findByToken, SPECIAL_DEADLINE, setManualResult, specialBetsEnabled, setSpecialBetsEnabled, calculateSpecial, calculateParticipant, calculateRanking, stringSimilarity, teamMatches, reconcileFinishedResults, extractFinishedResults, updateResults, updateGameResult, specialTransparency, adminSpecialBets, recalculateGame } = require("../server");
 
 test("usa o endereço oficial da rede interna", () => {
   const { APP_BASE_URL } = require("../server");
@@ -44,6 +44,17 @@ test("agenda inclui todos os jogos exceto os dois primeiros do grupo A", () => {
 
 test("prazo especial termina no fim de 19 de junho em Brasilia", () => {
   assert.equal(SPECIAL_DEADLINE.toISOString(), "2026-06-20T02:59:59.999Z");
+});
+test("administrador habilita e desabilita apostas especiais sem alterar apostas", () => {
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),"bolao-special-status-")),settingsFile=path.join(dir,"settings.json"),betsFile=path.join(dir,"bets.json");
+  fs.writeFileSync(betsFile,'{"usuario":{"special":{"champion":"Brasil"}}}\n');
+  const betsBefore=fs.readFileSync(betsFile,"utf8");
+  assert.equal(specialBetsEnabled(new Date("2026-06-19T12:00:00Z"),settingsFile),true);
+  assert.equal(specialBetsEnabled(new Date("2026-06-22T12:00:00Z"),settingsFile),false);
+  assert.deepEqual(setSpecialBetsEnabled(true,settingsFile),{specialBetsEnabled:true});
+  assert.equal(specialBetsEnabled(new Date("2026-06-22T12:00:00Z"),settingsFile),true);
+  assert.deepEqual(setSpecialBetsEnabled(false,settingsFile),{specialBetsEnabled:false});
+  assert.equal(fs.readFileSync(betsFile,"utf8"),betsBefore);
 });
 test("ranking contabiliza tres pontos por acerto", () => {
   const bets={"ana@exemplo.com":{matches:{j1:{pick:"home"},j2:{pick:"draw"}}},"bia@exemplo.com":{matches:{j1:{pick:"away"},j2:{pick:"draw"}}}};

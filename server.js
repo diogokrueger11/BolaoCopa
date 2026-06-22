@@ -10,6 +10,7 @@ const DATA_DIR = path.join(__dirname, "data");
 const DB_FILE = path.join(DATA_DIR, "bets.json");
 const RESULTS_FILE = path.join(DATA_DIR, "results.json");
 const SPECIAL_RESULTS_FILE = path.join(DATA_DIR, "special-results.json");
+const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
 const BITRIX_CONFIG_FILE = path.join(DATA_DIR, "bitrix-config.json");
 const RESULTS_API_URL = process.env.RESULTS_API_URL || "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260612-20260627&limit=100";
 const SPECIAL_DEADLINE = new Date("2026-06-20T02:59:59.999Z");
@@ -34,6 +35,16 @@ function writeResults(results, file = RESULTS_FILE) {
   const temp = `${file}.tmp`;
   fs.writeFileSync(temp, `${JSON.stringify(results, null, 2)}\n`);
   fs.renameSync(temp, file);
+}
+function specialBetsEnabled(now = new Date(), settingsFile = SETTINGS_FILE) {
+  const settings = readJson(settingsFile);
+  return typeof settings.specialBetsEnabled === "boolean" ? settings.specialBetsEnabled : now <= SPECIAL_DEADLINE;
+}
+function setSpecialBetsEnabled(enabled, settingsFile = SETTINGS_FILE) {
+  if (typeof enabled !== "boolean") throw new Error("Informe se as apostas especiais devem ser habilitadas.");
+  const settings = { ...readJson(settingsFile), specialBetsEnabled:enabled };
+  writeResults(settings, settingsFile);
+  return { specialBetsEnabled:enabled };
 }
 function setManualResult(gameId, result, resultsFile = RESULTS_FILE, kickoffs = GAME_KICKOFFS) {
   if (!kickoffs[gameId]) throw new Error("Jogo nao encontrado.");
@@ -492,7 +503,8 @@ async function betsApi(req, res, url) {
       special: record.special || null,
       specialLocked: Boolean(record.specialLocked),
       updatedAt: record.updatedAt || null,
-      specialDeadline: SPECIAL_DEADLINE.toISOString()
+      specialDeadline: SPECIAL_DEADLINE.toISOString(),
+      specialBetsEnabled: specialBetsEnabled()
     });
   }
   if (req.method !== "POST") return send(res, 405, { error: "Método não permitido." });
@@ -503,7 +515,7 @@ async function betsApi(req, res, url) {
   const matches = { ...(current.matches || {}), ...cleanMatchBets(input.matches, now) };
   let special = current.special || null, specialLocked = Boolean(current.specialLocked);
   if (input.special) {
-    if (now > SPECIAL_DEADLINE) return send(res, 409, { error: "O prazo dos palpites especiais terminou." });
+    if (!specialBetsEnabled(now)) return send(res, 409, { error: "As apostas especiais estao desabilitadas pelo administrador." });
     const { champion, runnerUp, third, brazilStage } = input.special;
     if (![champion, runnerUp, third, brazilStage].every(value => typeof value === "string" && value)) return send(res, 400, { error: "Preencha todos os palpites especiais." });
     if (new Set([champion, runnerUp, third]).size !== 3) return send(res, 400, { error: "Campeão, vice e terceiro devem ser diferentes." });
@@ -512,7 +524,7 @@ async function betsApi(req, res, url) {
   }
   db[email] = { ...current, matches, special, specialLocked, updatedAt:now.toISOString(), profile:current.profile || await getBitrixProfile(email) };
   writeDb(db);
-  send(res, 200, { ...db[email], accessToken:undefined, specialDeadline:SPECIAL_DEADLINE.toISOString() });
+  send(res, 200, { ...db[email], accessToken:undefined, specialDeadline:SPECIAL_DEADLINE.toISOString(), specialBetsEnabled:specialBetsEnabled(now) });
 }
 
 const MIME={".html":"text/html; charset=utf-8",".css":"text/css; charset=utf-8",".js":"text/javascript; charset=utf-8",".json":"application/json; charset=utf-8"};
@@ -594,7 +606,11 @@ const server=http.createServer(async(req,res)=>{
     return send(res,200,adminGames());
   }
   if(url.pathname==="/api/admin-special-bets"){
-    return send(res,200,{...adminSpecialBets(),results:readJson(SPECIAL_RESULTS_FILE)});
+    return send(res,200,{...adminSpecialBets(),results:readJson(SPECIAL_RESULTS_FILE),specialBetsEnabled:specialBetsEnabled()});
+  }
+  if(url.pathname==="/api/admin-special-bets-status"&&req.method==="POST"){
+    let input;try{input=await receiveJson(req)}catch{return send(res,400,{error:"Dados invalidos."})}
+    try{return send(res,200,setSpecialBetsEnabled(input.enabled))}catch(error){return send(res,400,{error:error.message})}
   }
   if(url.pathname==="/api/admin-special-results"&&req.method==="POST"){
     let input;try{input=await receiveJson(req)}catch{return send(res,400,{error:"Dados invalidos."})}
@@ -619,4 +635,4 @@ const server=http.createServer(async(req,res)=>{
   send(res,200,fs.readFileSync(file),MIME[path.extname(file)]||"application/octet-stream");
 });
 if(require.main===module)server.listen(PORT,()=>console.log(`Bolão disponível na porta ${PORT}`));
-module.exports={cleanMatchBets,validEmail,validToken,createToken,participantPublicId,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,APP_BASE_URL,RESULTS_API_URL,setManualResult,setSpecialResults,calculateSpecial,calculateParticipant,calculateRanking,normalizeTeamName,stringSimilarity,teamMatches,reconcileFinishedResults,extractFinishedResults,updateResults,updateGameResult,specialTransparency,adminSpecialBets,adminGames,recalculateGame,getBitrixProfile,listBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};
+module.exports={cleanMatchBets,validEmail,validToken,createToken,participantPublicId,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,APP_BASE_URL,RESULTS_API_URL,setManualResult,setSpecialResults,specialBetsEnabled,setSpecialBetsEnabled,calculateSpecial,calculateParticipant,calculateRanking,normalizeTeamName,stringSimilarity,teamMatches,reconcileFinishedResults,extractFinishedResults,updateResults,updateGameResult,specialTransparency,adminSpecialBets,adminGames,recalculateGame,getBitrixProfile,listBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};

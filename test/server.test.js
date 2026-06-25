@@ -73,6 +73,14 @@ test("valida palpites dos playoffs antes do inicio", () => {
   assert.deepEqual(result, { p1:{homeScore:2,awayScore:1,advancing:"home",kickoff:"2026-06-28T16:00:00.000Z"} });
 });
 
+test("bloqueia apostas em playoffs ainda indefinidos", async () => {
+  const fallback=[{id:"slot1",home:"Mandante R32-01",away:"Visitante R32-01",kickoff:"2026-06-28T16:00:00Z"}];
+  const fetchImpl=async()=>({ok:false,json:async()=>({})});
+  const games=await fetchPlayoffGames(fetchImpl,fallback);
+  assert.equal(games.rows[0].defined,false);
+  assert.deepEqual(cleanPlayoffBets({slot1:{homeScore:1,awayScore:0}},new Date("2026-06-28T12:00:00Z"),{}),{});
+});
+
 test("pontua playoffs por placar exato classificado e placar parcial", () => {
   const record={playoffs:{p1:{homeScore:2,awayScore:1,advancing:"home"},p2:{homeScore:1,awayScore:0,advancing:"away"},p3:{homeScore:3,awayScore:2,advancing:"home"}}};
   const score=calculatePlayoffs(record,{p1:{homeScore:2,awayScore:1,advancing:"home"},p2:{homeScore:1,awayScore:2,advancing:"away"},p3:{homeScore:4,awayScore:2,advancing:"away"}});

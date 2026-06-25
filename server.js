@@ -126,6 +126,13 @@ function playoffStageByKickoff(kickoff) {
   if (time >= new Date("2026-07-04T00:00:00-03:00").valueOf()) return "Oitavas de final";
   return "16 avos de final";
 }
+function playoffTeamDefined(name) {
+  const value = String(name || "").toLowerCase();
+  return Boolean(value) && !/(mandante|visitante|vencedor|perdedor|a definir|tbd|to be determined|\b[123][a-l]\b)/i.test(value);
+}
+function playoffGameDefined(game) {
+  return playoffTeamDefined(game?.home) && playoffTeamDefined(game?.away);
+}
 function localTeamNameFromCompetitor(competitor) {
   const id = String(competitor?.team?.id || "");
   const sourceName = competitorName(competitor);
@@ -153,16 +160,18 @@ async function fetchPlayoffGames(fetchImpl = fetch, fallback = playoffGames()) {
         home:localTeamNameFromCompetitor(home),
         away:localTeamNameFromCompetitor(away),
         kickoff,
+        defined:playoffGameDefined({ home:localTeamNameFromCompetitor(home), away:localTeamNameFromCompetitor(away) }),
         source:"espn"
       }];
     }).sort((a,b)=>new Date(a.kickoff)-new Date(b.kickoff));
-    return { source:games.length ? "espn" : "fallback", rows:games.length ? games : fallback };
+    const rows = games.length ? games : fallback.map(game => ({ ...game, defined:playoffGameDefined(game) }));
+    return { source:games.length ? "espn" : "fallback", rows };
   } catch {
-    return { source:"fallback", rows:fallback };
+    return { source:"fallback", rows:fallback.map(game => ({ ...game, defined:playoffGameDefined(game) })) };
   }
 }
 function buildPlayoffKickoffs(games = playoffGames()) {
-  return Object.fromEntries(games.map(game => [game.id, game.kickoff]));
+  return Object.fromEntries(games.filter(playoffGameDefined).map(game => [game.id, game.kickoff]));
 }
 function cleanPlayoffBets(playoffs, now, kickoffs = buildPlayoffKickoffs()) {
   const result = {};

@@ -10,6 +10,7 @@ let participantId=null;
 loadBets().then(data=>{
   participantId=data.participantId||null;
   document.querySelector("#home-bets").textContent=Object.keys(data.matches||{}).length;
+  document.querySelector("#home-playoffs").textContent=Object.keys(data.playoffs||{}).length;
   document.querySelector("#home-special").textContent=data.special?"Salvos":"Pendente";
   if(window.latestRanking)renderMyRanking(window.latestRanking);
 }).catch(error=>toast(error.message));
@@ -20,7 +21,7 @@ function renderMyRanking(data){
   if(!row)return;
   card.classList.remove("hidden");
   document.querySelector("#my-ranking-position").textContent=`${row.position}º`;
-  document.querySelector("#my-ranking-summary").textContent=`${row.profile.name||"Participante"}: ${row.points} pontos (${row.matchPoints} jogos + ${row.specialPoints} especiais).`;
+  document.querySelector("#my-ranking-summary").textContent=`${row.profile.name||"Participante"}: ${row.points} pontos (${row.matchPoints} jogos + ${row.playoffPoints} playoffs + ${row.specialPoints} especiais + ${row.extraPoints} extras).`;
 }
 
 fetch("/api/ranking").then(response=>response.json()).then(data=>{

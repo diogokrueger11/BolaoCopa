@@ -10,9 +10,11 @@ const DATA_DIR = path.join(__dirname, "data");
 const DB_FILE = path.join(DATA_DIR, "bets.json");
 const RESULTS_FILE = path.join(DATA_DIR, "results.json");
 const SPECIAL_RESULTS_FILE = path.join(DATA_DIR, "special-results.json");
+const PLAYOFF_RESULTS_FILE = path.join(DATA_DIR, "playoff-results.json");
 const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
 const BITRIX_CONFIG_FILE = path.join(DATA_DIR, "bitrix-config.json");
 const RESULTS_API_URL = process.env.RESULTS_API_URL || "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260612-20260627&limit=100";
+const PLAYOFFS_API_URL = process.env.PLAYOFFS_API_URL || "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260628-20260719&limit=100";
 const SPECIAL_DEADLINE = new Date("2026-06-20T02:59:59.999Z");
 const profileCache = new Map();
 let bitrixSyncPromise = null;
@@ -22,6 +24,7 @@ fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(DB_FILE)) fs.writeFileSync(DB_FILE, "{}\n");
 if (!fs.existsSync(RESULTS_FILE)) fs.writeFileSync(RESULTS_FILE, "{}\n");
 if (!fs.existsSync(SPECIAL_RESULTS_FILE)) fs.writeFileSync(SPECIAL_RESULTS_FILE, "{}\n");
+if (!fs.existsSync(PLAYOFF_RESULTS_FILE)) fs.writeFileSync(PLAYOFF_RESULTS_FILE, "{}\n");
 
 function readJson(file) {
   try { return JSON.parse(fs.readFileSync(file, "utf8")); } catch { return {}; }
@@ -110,6 +113,124 @@ function cleanMatchBets(matches, now) {
     result[id] = { pick: bet.pick, kickoff: kickoff.toISOString() };
   }
   return result;
+}
+function playoffGames() {
+  return readJson(path.join(PUBLIC_DIR, "playoffs.json"));
+}
+function playoffStageByKickoff(kickoff) {
+  const time = new Date(kickoff).valueOf();
+  if (time >= new Date("2026-07-19T00:00:00-03:00").valueOf()) return "Final";
+  if (time >= new Date("2026-07-18T00:00:00-03:00").valueOf()) return "Terceiro lugar";
+  if (time >= new Date("2026-07-14T00:00:00-03:00").valueOf()) return "Semifinal";
+  if (time >= new Date("2026-07-09T00:00:00-03:00").valueOf()) return "Quartas de final";
+  if (time >= new Date("2026-07-04T00:00:00-03:00").valueOf()) return "Oitavas de final";
+  return "16 avos de final";
+}
+function localTeamNameFromCompetitor(competitor) {
+  const id = String(competitor?.team?.id || "");
+  const sourceName = competitorName(competitor);
+  const schedule = readJson(path.join(PUBLIC_DIR, "schedule.json"));
+  const byId = schedule.flatMap(game => [game.home, game.away]).find(name => TEAM_SOURCE_IDS[normalizeTeamName(name)] === id);
+  if (byId) return byId;
+  const normalized = normalizeTeamName(sourceName);
+  return schedule.flatMap(game => [game.home, game.away]).find(name => normalizeTeamName(name) === normalized) || sourceName || "A definir";
+}
+async function fetchPlayoffGames(fetchImpl = fetch, fallback = playoffGames()) {
+  try {
+    const response = await fetchImpl(PLAYOFFS_API_URL, { signal: AbortSignal.timeout(15000) });
+    if (!response.ok) throw new Error("Fonte indisponivel.");
+    const events = (await response.json()).events || [];
+    const games = events.flatMap((event, index) => {
+      const competition = event.competitions?.[0];
+      const home = competition?.competitors?.find(item => item.homeAway === "home");
+      const away = competition?.competitors?.find(item => item.homeAway === "away");
+      const kickoff = event.date || competition?.date;
+      if (!home || !away || !kickoff) return [];
+      return [{
+        id:`P-${event.id || index + 1}`,
+        sourceId:String(event.id || ""),
+        stage:playoffStageByKickoff(kickoff),
+        home:localTeamNameFromCompetitor(home),
+        away:localTeamNameFromCompetitor(away),
+        kickoff,
+        source:"espn"
+      }];
+    }).sort((a,b)=>new Date(a.kickoff)-new Date(b.kickoff));
+    return { source:games.length ? "espn" : "fallback", rows:games.length ? games : fallback };
+  } catch {
+    return { source:"fallback", rows:fallback };
+  }
+}
+function buildPlayoffKickoffs(games = playoffGames()) {
+  return Object.fromEntries(games.map(game => [game.id, game.kickoff]));
+}
+function cleanPlayoffBets(playoffs, now, kickoffs = buildPlayoffKickoffs()) {
+  const result = {};
+  if (!playoffs || typeof playoffs !== "object") return result;
+  for (const [id, bet] of Object.entries(playoffs)) {
+    if (bet?.homeScore === "" || bet?.awayScore === "") continue;
+    const homeScore = Number(bet?.homeScore), awayScore = Number(bet?.awayScore);
+    if (!Number.isInteger(homeScore) || !Number.isInteger(awayScore) || homeScore < 0 || awayScore < 0) continue;
+    const advancing = inferPlayoffAdvancing(homeScore, awayScore, bet?.advancing);
+    if (!advancing) continue;
+    const kickoff = new Date(kickoffs[id]);
+    if (Number.isNaN(kickoff.valueOf()) || kickoff <= now) continue;
+    result[id] = { homeScore, awayScore, advancing, kickoff: kickoff.toISOString() };
+  }
+  return result;
+}
+function inferPlayoffAdvancing(homeScore, awayScore, advancing) {
+  if (homeScore > awayScore) return "home";
+  if (awayScore > homeScore) return "away";
+  return ["home", "away"].includes(advancing) ? advancing : null;
+}
+function cleanExtraPoints(value) {
+  const points = Number(value);
+  if (!Number.isInteger(points) || points < 0 || points > 999) throw new Error("Informe pontos extras entre 0 e 999.");
+  return points;
+}
+function setExtraPoints(token, points) {
+  const db = readJson(DB_FILE);
+  const participant = findByToken(db, token || "");
+  if (!participant) throw new Error("Participante nao encontrado.");
+  participant.record.extraPoints = cleanExtraPoints(points);
+  participant.record.extraPointsUpdatedAt = new Date().toISOString();
+  writeDb(db);
+  return { token, extraPoints: participant.record.extraPoints };
+}
+function setManualPlayoffResult(gameId, input, resultsFile = PLAYOFF_RESULTS_FILE, games = playoffGames()) {
+  if (!games.some(game => game.id === gameId)) throw new Error("Jogo de playoff nao encontrado.");
+  const homeScore = Number(input?.homeScore), awayScore = Number(input?.awayScore);
+  if (!Number.isInteger(homeScore) || !Number.isInteger(awayScore) || homeScore < 0 || awayScore < 0) throw new Error("Informe placares validos.");
+  const advancing = inferPlayoffAdvancing(homeScore, awayScore, input?.advancing);
+  if (!advancing) throw new Error("Informe o time que avancou.");
+  const results = readJson(resultsFile);
+  results[gameId] = { homeScore, awayScore, advancing };
+  writeResults(results, resultsFile);
+  return { gameId, result: results[gameId], total:Object.keys(results).length };
+}
+function calculatePlayoffs(record, playoffResults = {}) {
+  const details = Object.entries(playoffResults).flatMap(([gameId, result]) => {
+    const bet = record?.playoffs?.[gameId];
+    if (!bet || !Number.isInteger(result?.homeScore) || !Number.isInteger(result?.awayScore) || !["home","away"].includes(result?.advancing)) return [];
+    const exactScore = bet.homeScore === result.homeScore && bet.awayScore === result.awayScore;
+    const advancingCorrect = bet.advancing === result.advancing;
+    const oneScoreCorrect = !exactScore && (bet.homeScore === result.homeScore || bet.awayScore === result.awayScore);
+    return [{
+      gameId,
+      pick:bet,
+      result,
+      exactScore,
+      advancingCorrect,
+      oneScoreCorrect,
+      points:(exactScore ? 3 : 0) + (advancingCorrect ? 2 : 0) + (oneScoreCorrect ? 1 : 0)
+    }];
+  });
+  return {
+    correct:details.filter(item => item.exactScore || item.advancingCorrect || item.oneScoreCorrect).length,
+    points:details.reduce((total,item)=>total+item.points,0),
+    details
+  };
 }
 function gameTransparency(gameId, now = new Date()) {
   const kickoff = new Date(GAME_KICKOFFS[gameId]);
@@ -223,6 +344,28 @@ function adminGames() {
     })
   };
 }
+async function adminPlayoffs() {
+  const games = (await fetchPlayoffGames()).rows;
+  const bets = readJson(DB_FILE);
+  const results = readJson(PLAYOFF_RESULTS_FILE);
+  return {
+    rows:games.map(game => {
+      const result = results[game.id] || null;
+      const picks = Object.values(bets).flatMap(record => {
+        const bet = record.playoffs?.[game.id];
+        return Number.isInteger(bet?.homeScore) && Number.isInteger(bet?.awayScore) && ["home","away"].includes(bet?.advancing) ? [bet] : [];
+      });
+      const scored = picks.map(bet => calculatePlayoffs({ playoffs:{ [game.id]:bet } }, result ? { [game.id]:result } : {})).map(score => score.points);
+      return {
+        ...game,
+        result,
+        totalBets:picks.length,
+        pointsAwarded:scored.reduce((total,points)=>total+points,0),
+        started:new Date(game.kickoff) <= new Date()
+      };
+    })
+  };
+}
 function recalculateGame(gameId) {
   const game = readJson(path.join(PUBLIC_DIR, "schedule.json")).find(item => item.id === gameId);
   if (!game) throw new Error("Jogo nao encontrado.");
@@ -247,13 +390,15 @@ function calculateParticipant(record, results, specialResults = {}) {
   });
   const correct = games.filter(game => game.correct).length;
   const special = calculateSpecial(record, specialResults);
-  return { correct:correct + special.correct, matchCorrect:correct, specialCorrect:special.correct, points:correct * 3 + special.points, matchPoints:correct * 3, specialPoints:special.points, finishedGames:games.length, games, special:special.details };
+  const playoffs = calculatePlayoffs(record, readJson(PLAYOFF_RESULTS_FILE));
+  const extraPoints = Number.isInteger(record?.extraPoints) ? record.extraPoints : 0;
+  return { correct:correct + special.correct + playoffs.correct, matchCorrect:correct, specialCorrect:special.correct, playoffCorrect:playoffs.correct, points:correct * 3 + special.points + playoffs.points + extraPoints, matchPoints:correct * 3, specialPoints:special.points, playoffPoints:playoffs.points, extraPoints, finishedGames:games.length, games, special:special.details, playoffs:playoffs.details };
 }
 function calculateRanking(bets, results, specialResults = {}) {
   const validResults = Object.fromEntries(Object.entries(results).filter(([, pick]) => ["home", "draw", "away"].includes(pick)));
   const ranking = Object.entries(bets).map(([email, record]) => {
     const score = calculateParticipant(record, validResults, specialResults);
-    return { email, participantId:participantPublicId(record), correct:score.correct, matchCorrect:score.matchCorrect, specialCorrect:score.specialCorrect, matchPoints:score.matchPoints, specialPoints:score.specialPoints, points:score.points, profile: record.profile || null };
+    return { email, participantId:participantPublicId(record), correct:score.correct, matchCorrect:score.matchCorrect, specialCorrect:score.specialCorrect, playoffCorrect:score.playoffCorrect, matchPoints:score.matchPoints, specialPoints:score.specialPoints, playoffPoints:score.playoffPoints, extraPoints:score.extraPoints, points:score.points, profile: record.profile || null };
   }).sort((a, b) => b.points - a.points || b.correct - a.correct || a.email.localeCompare(b.email));
   let previous = null;
   ranking.forEach((row, index) => {
@@ -471,8 +616,11 @@ async function syncBitrixUsers() {
       const profile = profileFromBitrixUser(user);
       db[email] = {
         matches: current.matches && typeof current.matches === "object" ? current.matches : {},
+        playoffs: current.playoffs && typeof current.playoffs === "object" ? current.playoffs : {},
         special: current.special || null,
         specialLocked: Boolean(current.specialLocked),
+        extraPoints: Number.isInteger(current.extraPoints) ? current.extraPoints : 0,
+        extraPointsUpdatedAt: current.extraPointsUpdatedAt || null,
         updatedAt: current.updatedAt || null,
         profile,
         accessToken: validToken(current.accessToken) ? current.accessToken : createToken()
@@ -499,6 +647,7 @@ async function betsApi(req, res, url) {
     const record = participant.record;
     return send(res, 200, {
       matches: record.matches && typeof record.matches === "object" ? record.matches : {},
+      playoffs: record.playoffs && typeof record.playoffs === "object" ? record.playoffs : {},
       participantId:participantPublicId(record),
       special: record.special || null,
       specialLocked: Boolean(record.specialLocked),
@@ -513,6 +662,8 @@ async function betsApi(req, res, url) {
   try { input = await receiveJson(req); } catch { return send(res, 400, { error: "Dados inválidos." }); }
   const now = new Date(), current = db[email];
   const matches = { ...(current.matches || {}), ...cleanMatchBets(input.matches, now) };
+  const playoffRows = (await fetchPlayoffGames()).rows;
+  const playoffs = { ...(current.playoffs || {}), ...cleanPlayoffBets(input.playoffs, now, buildPlayoffKickoffs(playoffRows)) };
   let special = current.special || null, specialLocked = Boolean(current.specialLocked);
   if (input.special) {
     if (!specialBetsEnabled(now)) return send(res, 409, { error: "As apostas especiais estao desabilitadas pelo administrador." });
@@ -522,7 +673,7 @@ async function betsApi(req, res, url) {
     special = { champion, runnerUp, third, brazilStage };
     specialLocked = false;
   }
-  db[email] = { ...current, matches, special, specialLocked, updatedAt:now.toISOString(), profile:current.profile || await getBitrixProfile(email) };
+  db[email] = { ...current, matches, playoffs, special, specialLocked, updatedAt:now.toISOString(), profile:current.profile || await getBitrixProfile(email) };
   writeDb(db);
   send(res, 200, { ...db[email], accessToken:undefined, specialDeadline:SPECIAL_DEADLINE.toISOString(), specialBetsEnabled:specialBetsEnabled(now) });
 }
@@ -555,8 +706,11 @@ const server=http.createServer(async(req,res)=>{
       points:score.points,
       matchPoints:score.matchPoints,
       specialPoints:score.specialPoints,
+      playoffPoints:score.playoffPoints,
+      extraPoints:score.extraPoints,
       games:score.games.filter(game=>game.correct),
-      special:score.special.filter(item=>item.correct)
+      special:score.special.filter(item=>item.correct),
+      playoffs:score.playoffs.filter(item=>item.points > 0)
     });
   }
   if(url.pathname==="/api/update-results"&&req.method==="POST"){
@@ -605,6 +759,20 @@ const server=http.createServer(async(req,res)=>{
   if(url.pathname==="/api/admin-games"){
     return send(res,200,adminGames());
   }
+  if(url.pathname==="/api/playoffs"){
+    return send(res,200,await fetchPlayoffGames());
+  }
+  if(url.pathname==="/api/admin-playoffs"){
+    return send(res,200,await adminPlayoffs());
+  }
+  if(url.pathname==="/api/manual-playoff-result"&&req.method==="POST"){
+    let input;try{input=await receiveJson(req)}catch{return send(res,400,{error:"Dados invalidos."})}
+    try{return send(res,200,setManualPlayoffResult(input.gameId,input,PLAYOFF_RESULTS_FILE,(await fetchPlayoffGames()).rows))}catch(error){return send(res,400,{error:error.message})}
+  }
+  if(url.pathname==="/api/extra-points"&&req.method==="POST"){
+    let input;try{input=await receiveJson(req)}catch{return send(res,400,{error:"Dados invalidos."})}
+    try{return send(res,200,setExtraPoints(input.recipientToken,input.points))}catch(error){return send(res,400,{error:error.message})}
+  }
   if(url.pathname==="/api/admin-special-bets"){
     return send(res,200,{...adminSpecialBets(),results:readJson(SPECIAL_RESULTS_FILE),specialBetsEnabled:specialBetsEnabled()});
   }
@@ -635,4 +803,4 @@ const server=http.createServer(async(req,res)=>{
   send(res,200,fs.readFileSync(file),MIME[path.extname(file)]||"application/octet-stream");
 });
 if(require.main===module)server.listen(PORT,()=>console.log(`Bolão disponível na porta ${PORT}`));
-module.exports={cleanMatchBets,validEmail,validToken,createToken,participantPublicId,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,APP_BASE_URL,RESULTS_API_URL,setManualResult,setSpecialResults,specialBetsEnabled,setSpecialBetsEnabled,calculateSpecial,calculateParticipant,calculateRanking,normalizeTeamName,stringSimilarity,teamMatches,reconcileFinishedResults,extractFinishedResults,updateResults,updateGameResult,specialTransparency,adminSpecialBets,adminGames,recalculateGame,getBitrixProfile,listBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};
+module.exports={cleanMatchBets,cleanPlayoffBets,fetchPlayoffGames,validEmail,validToken,createToken,participantPublicId,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,APP_BASE_URL,RESULTS_API_URL,PLAYOFFS_API_URL,setManualResult,setManualPlayoffResult,setExtraPoints,setSpecialResults,specialBetsEnabled,setSpecialBetsEnabled,calculateSpecial,calculatePlayoffs,calculateParticipant,calculateRanking,normalizeTeamName,stringSimilarity,teamMatches,reconcileFinishedResults,extractFinishedResults,updateResults,updateGameResult,specialTransparency,adminSpecialBets,adminGames,adminPlayoffs,recalculateGame,getBitrixProfile,listBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};

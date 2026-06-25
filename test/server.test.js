@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { cleanMatchBets, validEmail, validToken, createToken, participantPublicId, findByToken, SPECIAL_DEADLINE, setManualResult, specialBetsEnabled, setSpecialBetsEnabled, calculateSpecial, calculateParticipant, calculateRanking, stringSimilarity, teamMatches, reconcileFinishedResults, extractFinishedResults, updateResults, updateGameResult, specialTransparency, adminSpecialBets, recalculateGame } = require("../server");
+const { cleanMatchBets, cleanPlayoffBets, fetchPlayoffGames, validEmail, validToken, createToken, participantPublicId, findByToken, SPECIAL_DEADLINE, setManualResult, setManualPlayoffResult, specialBetsEnabled, setSpecialBetsEnabled, calculateSpecial, calculatePlayoffs, calculateParticipant, calculateRanking, stringSimilarity, teamMatches, reconcileFinishedResults, extractFinishedResults, updateResults, updateGameResult, specialTransparency, adminSpecialBets, recalculateGame } = require("../server");
 
 test("usa o endereço oficial da rede interna", () => {
   const { APP_BASE_URL } = require("../server");
@@ -61,6 +61,47 @@ test("ranking contabiliza tres pontos por acerto", () => {
   const result=calculateRanking(bets,{j1:"home",j2:"draw"});
   assert.equal(result.finishedGames,2);
   assert.deepEqual(result.ranking.map(row=>[row.email,row.correct,row.points]),[["ana@exemplo.com",2,6],["bia@exemplo.com",1,3]]);
+});
+
+test("valida palpites dos playoffs antes do inicio", () => {
+  const result = cleanPlayoffBets({
+    p1:{homeScore:2,awayScore:1},
+    p2:{homeScore:1,awayScore:1,advancing:"draw"},
+    p3:{homeScore:"",awayScore:0,advancing:"away"},
+    p4:{homeScore:0,awayScore:2,advancing:"away"}
+  }, new Date("2026-06-28T12:00:00Z"), { p1:"2026-06-28T16:00:00Z", p2:"2026-06-28T16:00:00Z", p3:"2026-06-28T16:00:00Z", p4:"2026-06-28T10:00:00Z" });
+  assert.deepEqual(result, { p1:{homeScore:2,awayScore:1,advancing:"home",kickoff:"2026-06-28T16:00:00.000Z"} });
+});
+
+test("pontua playoffs por placar exato classificado e placar parcial", () => {
+  const record={playoffs:{p1:{homeScore:2,awayScore:1,advancing:"home"},p2:{homeScore:1,awayScore:0,advancing:"away"},p3:{homeScore:3,awayScore:2,advancing:"home"}}};
+  const score=calculatePlayoffs(record,{p1:{homeScore:2,awayScore:1,advancing:"home"},p2:{homeScore:1,awayScore:2,advancing:"away"},p3:{homeScore:4,awayScore:2,advancing:"away"}});
+  assert.equal(score.points,9);
+  assert.deepEqual(score.details.map(item=>item.points),[5,3,1]);
+});
+
+test("resultado manual de playoff grava placar e classificado", () => {
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),"bolao-playoff-")),resultsFile=path.join(dir,"playoffs.json");
+  fs.writeFileSync(resultsFile,"{}\n");
+  const result=setManualPlayoffResult("p1",{homeScore:2,awayScore:2,advancing:"away"},resultsFile,[{id:"p1"}]);
+  assert.deepEqual(result,{gameId:"p1",result:{homeScore:2,awayScore:2,advancing:"away"},total:1});
+});
+
+test("resultado de playoff infere classificado quando ha vencedor no placar", () => {
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),"bolao-playoff-winner-")),resultsFile=path.join(dir,"playoffs.json");
+  fs.writeFileSync(resultsFile,"{}\n");
+  const result=setManualPlayoffResult("p1",{homeScore:3,awayScore:1},resultsFile,[{id:"p1"}]);
+  assert.deepEqual(result.result,{homeScore:3,awayScore:1,advancing:"home"});
+});
+
+test("busca jogos dos playoffs com paises da fonte externa", async () => {
+  const fetchImpl=async()=>({ok:true,json:async()=>({events:[{id:"401",date:"2026-07-04T19:00:00Z",competitions:[{competitors:[
+    {homeAway:"home",team:{id:"205",displayName:"Brazil"}},
+    {homeAway:"away",team:{id:"482",displayName:"Portugal"}}
+  ]}]}]})});
+  const result=await fetchPlayoffGames(fetchImpl,[]);
+  assert.equal(result.source,"espn");
+  assert.deepEqual(result.rows.map(game=>[game.id,game.stage,game.home,game.away]),[["P-401","Oitavas de final","Brasil","Portugal"]]);
 });
 
 test("pontua apostas especiais conforme a regra", () => {

@@ -361,12 +361,34 @@ async function adminPlayoffs() {
   const games = (await fetchPlayoffGames()).rows;
   const bets = readJson(DB_FILE);
   const results = readJson(PLAYOFF_RESULTS_FILE);
+  const playoffBets = [];
   return {
     rows:games.map(game => {
       const result = results[game.id] || null;
-      const picks = Object.values(bets).flatMap(record => {
+      const picks = Object.entries(bets).flatMap(([email, record]) => {
         const bet = record.playoffs?.[game.id];
-        return Number.isInteger(bet?.homeScore) && Number.isInteger(bet?.awayScore) && ["home","away"].includes(bet?.advancing) ? [bet] : [];
+        if (!Number.isInteger(bet?.homeScore) || !Number.isInteger(bet?.awayScore) || !["home","away"].includes(bet?.advancing)) return [];
+        const score = result ? calculatePlayoffs({ playoffs:{ [game.id]:bet } }, { [game.id]:result }).details[0] : null;
+        const row = {
+          participant:record.profile?.name||"Participante",
+          photo:record.profile?.photo||null,
+          email,
+          gameId:game.id,
+          stage:game.stage,
+          home:game.home,
+          away:game.away,
+          kickoff:game.kickoff,
+          bet,
+          result,
+          points:score?.points||0,
+          exactScore:Boolean(score?.exactScore),
+          advancingCorrect:Boolean(score?.advancingCorrect),
+          oneScoreCorrect:Boolean(score?.oneScoreCorrect),
+          outcomeCorrect:Boolean(score?.outcomeCorrect),
+          started:new Date(game.kickoff) <= new Date()
+        };
+        playoffBets.push(row);
+        return [bet];
       });
       const scored = picks.map(bet => calculatePlayoffs({ playoffs:{ [game.id]:bet } }, result ? { [game.id]:result } : {})).map(score => score.points);
       return {
@@ -376,7 +398,9 @@ async function adminPlayoffs() {
         pointsAwarded:scored.reduce((total,points)=>total+points,0),
         started:new Date(game.kickoff) <= new Date()
       };
-    })
+    }),
+    bets:playoffBets.sort((a,b)=>new Date(a.kickoff)-new Date(b.kickoff)||a.participant.localeCompare(b.participant,"pt-BR")),
+    totalBets:playoffBets.length
   };
 }
 function recalculateGame(gameId) {

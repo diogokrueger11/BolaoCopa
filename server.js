@@ -226,9 +226,8 @@ function calculatePlayoffs(record, playoffResults = {}) {
     const advancingCorrect = bet.advancing === result.advancing;
     const betWinner = bet.homeScore === bet.awayScore ? "draw" : bet.homeScore > bet.awayScore ? "home" : "away";
     const resultWinner = result.homeScore === result.awayScore ? "draw" : result.homeScore > result.awayScore ? "home" : "away";
-    const drawCorrect = bet.homeScore === bet.awayScore && result.homeScore === result.awayScore;
-    const oneScoreCorrect = !exactScore && (drawCorrect || bet.homeScore === result.homeScore || bet.awayScore === result.awayScore);
-    const winnerCorrect = !exactScore && !drawCorrect && betWinner === resultWinner;
+    const outcomeCorrect = !exactScore && betWinner === resultWinner;
+    const oneScoreCorrect = !exactScore && (bet.homeScore === result.homeScore || bet.awayScore === result.awayScore);
     return [{
       gameId,
       pick:bet,
@@ -236,12 +235,12 @@ function calculatePlayoffs(record, playoffResults = {}) {
       exactScore,
       advancingCorrect,
       oneScoreCorrect,
-      winnerCorrect,
-      points:(exactScore ? 3 : 0) + (advancingCorrect ? 2 : 0) + (oneScoreCorrect ? 1 : 0) + (winnerCorrect ? 1 : 0)
+      outcomeCorrect,
+      points:(exactScore ? 4 : 0) + (advancingCorrect ? 2 : 0) + (oneScoreCorrect ? 1 : 0) + (outcomeCorrect ? 1 : 0)
     }];
   });
   return {
-    correct:details.filter(item => item.exactScore || item.advancingCorrect || item.oneScoreCorrect || item.winnerCorrect).length,
+    correct:details.filter(item => item.exactScore || item.advancingCorrect || item.oneScoreCorrect || item.outcomeCorrect).length,
     points:details.reduce((total,item)=>total+item.points,0),
     details
   };

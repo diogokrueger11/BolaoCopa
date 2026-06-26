@@ -224,7 +224,11 @@ function calculatePlayoffs(record, playoffResults = {}) {
     if (!bet || !Number.isInteger(result?.homeScore) || !Number.isInteger(result?.awayScore) || !["home","away"].includes(result?.advancing)) return [];
     const exactScore = bet.homeScore === result.homeScore && bet.awayScore === result.awayScore;
     const advancingCorrect = bet.advancing === result.advancing;
-    const oneScoreCorrect = !exactScore && (bet.homeScore === result.homeScore || bet.awayScore === result.awayScore);
+    const betWinner = bet.homeScore === bet.awayScore ? "draw" : bet.homeScore > bet.awayScore ? "home" : "away";
+    const resultWinner = result.homeScore === result.awayScore ? "draw" : result.homeScore > result.awayScore ? "home" : "away";
+    const drawCorrect = bet.homeScore === bet.awayScore && result.homeScore === result.awayScore;
+    const oneScoreCorrect = !exactScore && (drawCorrect || bet.homeScore === result.homeScore || bet.awayScore === result.awayScore);
+    const winnerCorrect = !exactScore && !drawCorrect && betWinner === resultWinner;
     return [{
       gameId,
       pick:bet,
@@ -232,11 +236,12 @@ function calculatePlayoffs(record, playoffResults = {}) {
       exactScore,
       advancingCorrect,
       oneScoreCorrect,
-      points:(exactScore ? 3 : 0) + (advancingCorrect ? 2 : 0) + (oneScoreCorrect ? 1 : 0)
+      winnerCorrect,
+      points:(exactScore ? 3 : 0) + (advancingCorrect ? 2 : 0) + (oneScoreCorrect ? 1 : 0) + (winnerCorrect ? 1 : 0)
     }];
   });
   return {
-    correct:details.filter(item => item.exactScore || item.advancingCorrect || item.oneScoreCorrect).length,
+    correct:details.filter(item => item.exactScore || item.advancingCorrect || item.oneScoreCorrect || item.winnerCorrect).length,
     points:details.reduce((total,item)=>total+item.points,0),
     details
   };
@@ -703,24 +708,6 @@ const server=http.createServer(async(req,res)=>{
   }
   if(url.pathname==="/api/ranking"){
     return send(res,200,await enrichRanking(calculateRanking(readJson(DB_FILE),readJson(RESULTS_FILE),readJson(SPECIAL_RESULTS_FILE))));
-  }
-  if(url.pathname==="/api/ranking-details"){
-    const db=readJson(DB_FILE),id=url.searchParams.get("id")||"";
-    const entry=Object.values(db).find(record=>participantPublicId(record)===id);
-    if(!entry)return send(res,404,{error:"Participante nao encontrado."});
-    const score=calculateParticipant(entry,readJson(RESULTS_FILE),readJson(SPECIAL_RESULTS_FILE));
-    return send(res,200,{
-      profile:entry.profile||{name:"Participante",photo:null},
-      correct:score.correct,
-      points:score.points,
-      matchPoints:score.matchPoints,
-      specialPoints:score.specialPoints,
-      playoffPoints:score.playoffPoints,
-      extraPoints:score.extraPoints,
-      games:score.games.filter(game=>game.correct),
-      special:score.special.filter(item=>item.correct),
-      playoffs:score.playoffs.filter(item=>item.points > 0)
-    });
   }
   if(url.pathname==="/api/update-results"&&req.method==="POST"){
     try{return send(res,200,await updateResults())}catch(error){return send(res,502,{error:error.message})}

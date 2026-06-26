@@ -81,11 +81,26 @@ test("bloqueia apostas em playoffs ainda indefinidos", async () => {
   assert.deepEqual(cleanPlayoffBets({slot1:{homeScore:1,awayScore:0}},new Date("2026-06-28T12:00:00Z"),{}),{});
 });
 
-test("pontua playoffs por placar exato classificado e placar parcial", () => {
+test("pontua playoffs por placar exato, classificado, placar parcial e vencedor", () => {
   const record={playoffs:{p1:{homeScore:2,awayScore:1,advancing:"home"},p2:{homeScore:1,awayScore:0,advancing:"away"},p3:{homeScore:3,awayScore:2,advancing:"home"}}};
   const score=calculatePlayoffs(record,{p1:{homeScore:2,awayScore:1,advancing:"home"},p2:{homeScore:1,awayScore:2,advancing:"away"},p3:{homeScore:4,awayScore:2,advancing:"away"}});
-  assert.equal(score.points,9);
-  assert.deepEqual(score.details.map(item=>item.points),[5,3,1]);
+  assert.equal(score.points,10);
+  assert.deepEqual(score.details.map(item=>item.points),[5,3,2]);
+});
+
+test("pontua empate previsto mesmo com placar diferente", () => {
+  const record={playoffs:{p1:{homeScore:1,awayScore:1,advancing:"home"}}};
+  const score=calculatePlayoffs(record,{p1:{homeScore:0,awayScore:0,advancing:"away"}});
+  assert.equal(score.points,1);
+  assert.equal(score.details[0].oneScoreCorrect,true);
+});
+
+test("pontua vencedor e um placar quando o placar nao e exato", () => {
+  const record={playoffs:{p1:{homeScore:2,awayScore:1,advancing:"home"}}};
+  const score=calculatePlayoffs(record,{p1:{homeScore:3,awayScore:1,advancing:"home"}});
+  assert.equal(score.points,4);
+  assert.equal(score.details[0].winnerCorrect,true);
+  assert.equal(score.details[0].oneScoreCorrect,true);
 });
 
 test("resultado manual de playoff grava placar e classificado", () => {

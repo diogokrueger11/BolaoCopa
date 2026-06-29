@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { cleanMatchBets, cleanPlayoffBets, fetchPlayoffGames, validEmail, validToken, createToken, participantPublicId, findByToken, SPECIAL_DEADLINE, setManualResult, setManualPlayoffResult, specialBetsEnabled, setSpecialBetsEnabled, calculateSpecial, calculatePlayoffs, calculateParticipant, calculateRanking, stringSimilarity, teamMatches, reconcileFinishedResults, extractFinishedResults, updateResults, updateGameResult, specialTransparency, adminSpecialBets, recalculateGame } = require("../server");
+const { cleanMatchBets, cleanPlayoffBets, fetchPlayoffGames, validEmail, validToken, createToken, participantPublicId, findByToken, SPECIAL_DEADLINE, setManualResult, setManualPlayoffResult, specialBetsEnabled, setSpecialBetsEnabled, calculateSpecial, calculatePlayoffs, calculateParticipant, calculateRanking, stringSimilarity, teamMatches, reconcileFinishedResults, extractFinishedResults, updateResults, updateGameResult, updatePlayoffResult, specialTransparency, adminSpecialBets, recalculateGame } = require("../server");
 
 test("usa o endereço oficial da rede interna", () => {
   const { APP_BASE_URL } = require("../server");
@@ -225,6 +225,18 @@ test("busca e salva resultado de um jogo especifico", async () => {
     {homeAway:"away",score:"0",team:{id:"2869",displayName:"Morocco"}}
   ]}]}]})});
   assert.deepEqual(await updateGameResult("j1",fetchImpl,resultsFile,schedule),{gameId:"j1",result:"home",total:1});
+});
+
+test("busca e salva resultado de um playoff com classificado", async () => {
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),"bolao-playoff-result-")),resultsFile=path.join(dir,"playoffs.json");
+  fs.writeFileSync(resultsFile,"{}\n");
+  const games=[{id:"P-401",sourceId:"401",home:"Brasil",away:"Portugal",kickoff:"2026-07-04T19:00:00Z"}];
+  const fetchImpl=async()=>({ok:true,json:async()=>({events:[{id:"401",status:{type:{completed:true}},competitions:[{competitors:[
+    {homeAway:"home",score:"1",winner:false,team:{id:"205",displayName:"Brazil"}},
+    {homeAway:"away",score:"1",winner:true,team:{id:"482",displayName:"Portugal"}}
+  ]}]}]})});
+  assert.deepEqual(await updatePlayoffResult("P-401",fetchImpl,resultsFile,games),{gameId:"P-401",result:{homeScore:1,awayScore:1,advancing:"away"},total:1});
+  assert.deepEqual(JSON.parse(fs.readFileSync(resultsFile,"utf8")),{"P-401":{homeScore:1,awayScore:1,advancing:"away"}});
 });
 
 test("libera especiais somente depois do prazo", () => {

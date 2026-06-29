@@ -218,6 +218,44 @@ function setManualPlayoffResult(gameId, input, resultsFile = PLAYOFF_RESULTS_FIL
   writeResults(results, resultsFile);
   return { gameId, result: results[gameId], total:Object.keys(results).length };
 }
+function playoffResultFromEvent(event) {
+  const competition = event.competitions?.[0];
+  if (!competition?.status?.type?.completed && !event.status?.type?.completed) return null;
+  const home = competition?.competitors?.find(item => item.homeAway === "home");
+  const away = competition?.competitors?.find(item => item.homeAway === "away");
+  const homeScore = Number(home?.score), awayScore = Number(away?.score);
+  if (!home || !away || !Number.isInteger(homeScore) || !Number.isInteger(awayScore) || homeScore < 0 || awayScore < 0) return null;
+  const advancing = inferPlayoffAdvancing(homeScore, awayScore, home.winner ? "home" : away.winner ? "away" : null);
+  if (!advancing) return null;
+  return { homeScore, awayScore, advancing, home, away };
+}
+function reconcileFinishedPlayoffResults(games, payload) {
+  const results = {}, unmatched = [];
+  for (const event of payload?.events || []) {
+    const eventResult = playoffResultFromEvent(event);
+    if (!eventResult) continue;
+    const sourceId = String(event.id || "");
+    const matches = games.filter(game =>
+      (sourceId && (game.sourceId === sourceId || game.id === `P-${sourceId}`)) ||
+      (teamMatches(game.home, eventResult.home) && teamMatches(game.away, eventResult.away))
+    );
+    const game = matches.length === 1 ? matches[0] : null;
+    if (game) results[game.id] = {
+      homeScore:eventResult.homeScore,
+      awayScore:eventResult.awayScore,
+      advancing:eventResult.advancing
+    };
+    else unmatched.push({
+      event:event.name || `${competitorName(eventResult.home)} x ${competitorName(eventResult.away)}`,
+      home:competitorName(eventResult.home),
+      away:competitorName(eventResult.away),
+      homeId:String(eventResult.home.team?.id || ""),
+      awayId:String(eventResult.away.team?.id || ""),
+      reason:matches.length > 1 ? "ambiguous" : "not_found"
+    });
+  }
+  return { results, unmatched };
+}
 function calculatePlayoffs(record, playoffResults = {}) {
   const details = Object.entries(playoffResults).flatMap(([gameId, result]) => {
     const bet = record?.playoffs?.[gameId];
@@ -553,6 +591,16 @@ async function updateGameResult(gameId, fetchImpl = fetch, resultsFile = RESULTS
 
   return setManualResult(gameId, result, resultsFile, kickoffs);
 }
+async function updatePlayoffResult(gameId, fetchImpl = fetch, resultsFile = PLAYOFF_RESULTS_FILE, games = null) {
+  const playoffRows = games || (await fetchPlayoffGames(fetchImpl)).rows;
+  if (!playoffRows.some(game => game.id === gameId)) throw new Error("Jogo de playoff nao encontrado.");
+  const response = await fetchImpl(PLAYOFFS_API_URL, { signal: AbortSignal.timeout(15000) });
+  if (!response.ok) throw new Error(`Fonte de resultados indisponivel (${response.status}).`);
+  const reconciliation = reconcileFinishedPlayoffResults(playoffRows, await response.json());
+  const result = reconciliation.results[gameId];
+  if (!result) throw new Error("A fonte ainda nao retornou placar final e classificado para este playoff.");
+  return setManualPlayoffResult(gameId, result, resultsFile, playoffRows);
+}
 function bitrixWebhookUrl() {
   return process.env.BITRIX_WEBHOOK_URL || readJson(BITRIX_CONFIG_FILE).webhookUrl || "";
 }
@@ -784,6 +832,10 @@ const server=http.createServer(async(req,res)=>{
   if(url.pathname==="/api/admin-playoffs"){
     return send(res,200,await adminPlayoffs());
   }
+  if(url.pathname==="/api/update-playoff-result"&&req.method==="POST"){
+    let input;try{input=await receiveJson(req)}catch{return send(res,400,{error:"Dados invalidos."})}
+    try{return send(res,200,await updatePlayoffResult(input.gameId,fetch,PLAYOFF_RESULTS_FILE,(await fetchPlayoffGames()).rows))}catch(error){return send(res,502,{error:error.message})}
+  }
   if(url.pathname==="/api/manual-playoff-result"&&req.method==="POST"){
     let input;try{input=await receiveJson(req)}catch{return send(res,400,{error:"Dados invalidos."})}
     try{return send(res,200,setManualPlayoffResult(input.gameId,input,PLAYOFF_RESULTS_FILE,(await fetchPlayoffGames()).rows))}catch(error){return send(res,400,{error:error.message})}
@@ -822,4 +874,4 @@ const server=http.createServer(async(req,res)=>{
   send(res,200,fs.readFileSync(file),MIME[path.extname(file)]||"application/octet-stream");
 });
 if(require.main===module)server.listen(PORT,()=>console.log(`Bolão disponível na porta ${PORT}`));
-module.exports={cleanMatchBets,cleanPlayoffBets,fetchPlayoffGames,validEmail,validToken,createToken,participantPublicId,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,APP_BASE_URL,RESULTS_API_URL,PLAYOFFS_API_URL,setManualResult,setManualPlayoffResult,setExtraPoints,setSpecialResults,specialBetsEnabled,setSpecialBetsEnabled,calculateSpecial,calculatePlayoffs,calculateParticipant,calculateRanking,normalizeTeamName,stringSimilarity,teamMatches,reconcileFinishedResults,extractFinishedResults,updateResults,updateGameResult,specialTransparency,adminSpecialBets,adminGames,adminPlayoffs,recalculateGame,getBitrixProfile,listBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};
+module.exports={cleanMatchBets,cleanPlayoffBets,fetchPlayoffGames,validEmail,validToken,createToken,participantPublicId,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,APP_BASE_URL,RESULTS_API_URL,PLAYOFFS_API_URL,setManualResult,setManualPlayoffResult,setExtraPoints,setSpecialResults,specialBetsEnabled,setSpecialBetsEnabled,calculateSpecial,calculatePlayoffs,calculateParticipant,calculateRanking,normalizeTeamName,stringSimilarity,teamMatches,reconcileFinishedResults,reconcileFinishedPlayoffResults,extractFinishedResults,updateResults,updateGameResult,updatePlayoffResult,specialTransparency,adminSpecialBets,adminGames,adminPlayoffs,recalculateGame,getBitrixProfile,listBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};

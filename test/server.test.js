@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { cleanMatchBets, cleanPlayoffBets, fetchPlayoffGames, validEmail, validToken, createToken, participantPublicId, findByToken, SPECIAL_DEADLINE, setManualResult, setManualPlayoffResult, specialBetsEnabled, setSpecialBetsEnabled, calculateSpecial, calculatePlayoffs, calculateParticipant, calculateRanking, stringSimilarity, teamMatches, reconcileFinishedResults, extractFinishedResults, updateResults, updateGameResult, updatePlayoffResult, specialTransparency, adminSpecialBets, recalculateGame } = require("../server");
+const { cleanMatchBets, cleanPlayoffBets, fetchPlayoffGames, validEmail, validToken, createToken, participantPublicId, findByToken, SPECIAL_DEADLINE, setManualResult, setManualPlayoffResult, specialBetsEnabled, setSpecialBetsEnabled, calculateSpecial, calculatePlayoffs, calculateParticipant, calculateRanking, stringSimilarity, teamMatches, reconcileFinishedResults, extractFinishedResults, updateResults, updateGameResult, updatePlayoffResult, playoffTransparency, specialTransparency, adminSpecialBets, recalculateGame } = require("../server");
 
 test("usa o endereço oficial da rede interna", () => {
   const { APP_BASE_URL } = require("../server");
@@ -237,6 +237,12 @@ test("busca e salva resultado de um playoff com classificado", async () => {
   ]}]}]})});
   assert.deepEqual(await updatePlayoffResult("P-401",fetchImpl,resultsFile,games),{gameId:"P-401",result:{homeScore:1,awayScore:1,advancing:"away"},total:1});
   assert.deepEqual(JSON.parse(fs.readFileSync(resultsFile,"utf8")),{"P-401":{homeScore:1,awayScore:1,advancing:"away"}});
+});
+
+test("transparencia de playoff libera apos o inicio", () => {
+  const games=[{id:"p1",home:"Brasil",away:"Portugal",kickoff:"2026-07-04T19:00:00Z"}];
+  assert.equal(playoffTransparency("p1",games,new Date("2026-07-04T18:59:00Z")).status,403);
+  assert.equal(playoffTransparency("p1",games,new Date("2026-07-04T19:00:00Z")).status,200);
 });
 
 test("libera especiais somente depois do prazo", () => {

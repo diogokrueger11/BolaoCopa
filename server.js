@@ -305,6 +305,42 @@ function gameTransparency(gameId, now = new Date()) {
   })).sort((a,b)=>a.name.localeCompare(b.name,"pt-BR"));
   return { status:200, body:{ gameId, kickoff:kickoff.toISOString(), result, total:picks.length, totals, picks, nonBettors } };
 }
+function playoffTransparency(gameId, games = playoffGames(), now = new Date()) {
+  const game = games.find(item => item.id === gameId);
+  if (!game) return { status:404, body:{ error:"Playoff nao encontrado." } };
+  const kickoff = new Date(game.kickoff);
+  if (Number.isNaN(kickoff.valueOf())) return { status:404, body:{ error:"Playoff nao encontrado." } };
+  if (kickoff > now) return { status:403, body:{ error:"Os palpites serao liberados quando o jogo comecar.", kickoff:kickoff.toISOString() } };
+  const result = readJson(PLAYOFF_RESULTS_FILE)[gameId] || null;
+  const rows = Object.values(readJson(DB_FILE));
+  const picks = rows.flatMap(record => {
+    const bet = record.playoffs?.[gameId];
+    if (!Number.isInteger(bet?.homeScore) || !Number.isInteger(bet?.awayScore) || !["home","away"].includes(bet?.advancing)) return [];
+    const score = result ? calculatePlayoffs({ playoffs:{ [gameId]:bet } }, { [gameId]:result }).details[0] : null;
+    return [{
+      name:record.profile?.name||"Participante",
+      photo:record.profile?.photo||null,
+      bet,
+      points:score?.points||0,
+      exactScore:Boolean(score?.exactScore),
+      advancingCorrect:Boolean(score?.advancingCorrect),
+      oneScoreCorrect:Boolean(score?.oneScoreCorrect),
+      outcomeCorrect:Boolean(score?.outcomeCorrect)
+    }];
+  }).sort((a,b)=>a.name.localeCompare(b.name,"pt-BR"));
+  const totals = picks.reduce((acc, item) => {
+    acc[item.bet.advancing] += 1;
+    return acc;
+  }, { home:0, away:0 });
+  const nonBettors = rows.filter(record =>
+    record.inviteSentAt &&
+    !Number.isInteger(record.playoffs?.[gameId]?.homeScore)
+  ).map(record => ({
+    name:record.profile?.name||"Participante",
+    photo:record.profile?.photo||null
+  })).sort((a,b)=>a.name.localeCompare(b.name,"pt-BR"));
+  return { status:200, body:{ gameId, kickoff:kickoff.toISOString(), home:game.home, away:game.away, result, total:picks.length, totals, picks, nonBettors } };
+}
 function specialTransparency(now = new Date()) {
   if (now <= SPECIAL_DEADLINE) return { status:403, body:{ error:"Os palpites especiais serao liberados apos o encerramento do prazo.", deadline:SPECIAL_DEADLINE.toISOString() } };
   const rows = adminSpecialBets().rows;
@@ -799,6 +835,10 @@ const server=http.createServer(async(req,res)=>{
     const result=gameTransparency(url.searchParams.get("id")||"");
     return send(res,result.status,result.body);
   }
+  if(url.pathname==="/api/playoff-transparency"){
+    const result=playoffTransparency(url.searchParams.get("id")||"", (await fetchPlayoffGames()).rows);
+    return send(res,result.status,result.body);
+  }
   if(url.pathname==="/api/special-transparency"){
     const result=specialTransparency();
     return send(res,result.status,result.body);
@@ -827,7 +867,8 @@ const server=http.createServer(async(req,res)=>{
     return send(res,200,adminGames());
   }
   if(url.pathname==="/api/playoffs"){
-    return send(res,200,await fetchPlayoffGames());
+    const data=await fetchPlayoffGames(),results=readJson(PLAYOFF_RESULTS_FILE);
+    return send(res,200,{...data,rows:data.rows.map(game=>({...game,result:results[game.id]||null}))});
   }
   if(url.pathname==="/api/admin-playoffs"){
     return send(res,200,await adminPlayoffs());
@@ -874,4 +915,4 @@ const server=http.createServer(async(req,res)=>{
   send(res,200,fs.readFileSync(file),MIME[path.extname(file)]||"application/octet-stream");
 });
 if(require.main===module)server.listen(PORT,()=>console.log(`Bolão disponível na porta ${PORT}`));
-module.exports={cleanMatchBets,cleanPlayoffBets,fetchPlayoffGames,validEmail,validToken,createToken,participantPublicId,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,APP_BASE_URL,RESULTS_API_URL,PLAYOFFS_API_URL,setManualResult,setManualPlayoffResult,setExtraPoints,setSpecialResults,specialBetsEnabled,setSpecialBetsEnabled,calculateSpecial,calculatePlayoffs,calculateParticipant,calculateRanking,normalizeTeamName,stringSimilarity,teamMatches,reconcileFinishedResults,reconcileFinishedPlayoffResults,extractFinishedResults,updateResults,updateGameResult,updatePlayoffResult,specialTransparency,adminSpecialBets,adminGames,adminPlayoffs,recalculateGame,getBitrixProfile,listBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};
+module.exports={cleanMatchBets,cleanPlayoffBets,fetchPlayoffGames,validEmail,validToken,createToken,participantPublicId,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,APP_BASE_URL,RESULTS_API_URL,PLAYOFFS_API_URL,setManualResult,setManualPlayoffResult,setExtraPoints,setSpecialResults,specialBetsEnabled,setSpecialBetsEnabled,calculateSpecial,calculatePlayoffs,calculateParticipant,calculateRanking,normalizeTeamName,stringSimilarity,teamMatches,reconcileFinishedResults,reconcileFinishedPlayoffResults,extractFinishedResults,updateResults,updateGameResult,updatePlayoffResult,playoffTransparency,specialTransparency,adminSpecialBets,adminGames,adminPlayoffs,recalculateGame,getBitrixProfile,listBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};

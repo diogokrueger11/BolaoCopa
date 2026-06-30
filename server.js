@@ -798,6 +798,20 @@ async function pruneInactiveBitrixUsers() {
     backupFile
   };
 }
+async function updateBitrixUsers() {
+  const sync = await syncBitrixUsers();
+  const inactive = await pruneInactiveBitrixUsers();
+  return {
+    synced:true,
+    activeEmployees:sync.employees,
+    totalAfterSync:sync.total,
+    inactiveEmployees:inactive.inactiveEmployees,
+    removed:inactive.removed,
+    removedCount:inactive.removedCount,
+    remaining:inactive.remaining,
+    backupFile:inactive.backupFile
+  };
+}
 async function enrichRanking(rankingData) {
   const ranking = await Promise.all(rankingData.ranking.map(async row => ({ ...row, profile: row.profile || await getBitrixProfile(row.email) })));
   ranking.sort((a, b) => b.points - a.points || b.correct - a.correct || a.profile.name.localeCompare(b.profile.name, "pt-BR"));
@@ -894,6 +908,9 @@ const server=http.createServer(async(req,res)=>{
   if(url.pathname==="/api/prune-inactive-bitrix"&&req.method==="POST"){
     try{return send(res,200,await pruneInactiveBitrixUsers())}catch(error){return send(res,502,{error:error.message})}
   }
+  if(url.pathname==="/api/update-bitrix-users"&&req.method==="POST"){
+    try{return send(res,200,await updateBitrixUsers())}catch(error){return send(res,502,{error:error.message})}
+  }
   if(url.pathname==="/api/access-links"){
     const db=readJson(DB_FILE);
     const results=readJson(RESULTS_FILE);
@@ -963,4 +980,4 @@ const server=http.createServer(async(req,res)=>{
   send(res,200,fs.readFileSync(file),MIME[path.extname(file)]||"application/octet-stream");
 });
 if(require.main===module)server.listen(PORT,()=>console.log(`Bolão disponível na porta ${PORT}`));
-module.exports={cleanMatchBets,cleanPlayoffBets,fetchPlayoffGames,validEmail,validToken,createToken,participantPublicId,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,APP_BASE_URL,RESULTS_API_URL,PLAYOFFS_API_URL,setManualResult,setManualPlayoffResult,setExtraPoints,setSpecialResults,specialBetsEnabled,setSpecialBetsEnabled,calculateSpecial,calculatePlayoffs,calculateParticipant,calculateRanking,normalizeTeamName,stringSimilarity,teamMatches,reconcileFinishedResults,reconcileFinishedPlayoffResults,extractFinishedResults,updateResults,updateGameResult,updatePlayoffResult,playoffTransparency,specialTransparency,adminSpecialBets,adminGames,adminPlayoffs,recalculateGame,getBitrixProfile,listBitrixEmployees,listBitrixUsers,bitrixUserActive,bitrixUserInactive,pruneInactiveBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};
+module.exports={cleanMatchBets,cleanPlayoffBets,fetchPlayoffGames,validEmail,validToken,createToken,participantPublicId,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,APP_BASE_URL,RESULTS_API_URL,PLAYOFFS_API_URL,setManualResult,setManualPlayoffResult,setExtraPoints,setSpecialResults,specialBetsEnabled,setSpecialBetsEnabled,calculateSpecial,calculatePlayoffs,calculateParticipant,calculateRanking,normalizeTeamName,stringSimilarity,teamMatches,reconcileFinishedResults,reconcileFinishedPlayoffResults,extractFinishedResults,updateResults,updateGameResult,updatePlayoffResult,playoffTransparency,specialTransparency,adminSpecialBets,adminGames,adminPlayoffs,recalculateGame,getBitrixProfile,listBitrixEmployees,listBitrixUsers,bitrixUserActive,bitrixUserInactive,pruneInactiveBitrixUsers,updateBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};

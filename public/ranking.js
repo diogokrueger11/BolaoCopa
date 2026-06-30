@@ -1,7 +1,7 @@
 import{setupNav,toast,avatar}from"./shared.js";
 setupNav("ranking");
 
-const body=document.querySelector("#ranking-body"),summary=document.querySelector("#ranking-summary"),description=document.querySelector("#ranking-description"),pointsHead=document.querySelector("#ranking-points-head"),modeButtons=[...document.querySelectorAll("[data-ranking-mode]")];
+const body=document.querySelector("#ranking-body"),summary=document.querySelector("#ranking-summary"),description=document.querySelector("#ranking-description"),modeTitle=document.querySelector("#ranking-mode-title"),pointsHead=document.querySelector("#ranking-points-head"),modeButtons=[...document.querySelectorAll("[data-ranking-mode]")];
 let rankingRows=[],currentMode="general";
 const modes={
   general:{label:"Pontos",summary:"Ranking geral",description:"Acompanhe a classificacao geral do bolao.",points:"points",correct:"correct"},
@@ -23,6 +23,7 @@ function rankedRows(mode){
 function renderRanking(){
   const config=modes[currentMode],rows=rankedRows(currentMode);
   description.textContent=config.description;
+  modeTitle.textContent=config.summary;
   pointsHead.textContent=config.label;
   modeButtons.forEach(button=>button.classList.toggle("active",button.dataset.rankingMode===currentMode));
   body.innerHTML=rows.length?rows.map(row=>`<tr><td><b>${row.position}</b></td><td><div class="person">${avatar(row.profile)}<span><b>${row.profile.name||"Participante"}</b></span></div></td><td>${row[config.correct]}</td><td><strong>${row[config.points]}</strong></td></tr>`).join(""):'<tr><td colspan="4" class="empty">Nenhum participante salvou palpites ainda.</td></tr>';

@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { cleanMatchBets, cleanPlayoffBets, fetchPlayoffGames, validEmail, validToken, createToken, participantPublicId, findByToken, SPECIAL_DEADLINE, setManualResult, setManualPlayoffResult, specialBetsEnabled, setSpecialBetsEnabled, calculateSpecial, calculatePlayoffs, calculateParticipant, calculateRanking, stringSimilarity, teamMatches, reconcileFinishedResults, extractFinishedResults, updateResults, updateGameResult, updatePlayoffResult, playoffTransparency, specialTransparency, adminSpecialBets, recalculateGame } = require("../server");
+const { cleanMatchBets, cleanPlayoffBets, fetchPlayoffGames, validEmail, validToken, createToken, participantPublicId, findByToken, SPECIAL_DEADLINE, setManualResult, setManualPlayoffResult, specialBetsEnabled, setSpecialBetsEnabled, calculateSpecial, calculatePlayoffs, calculateParticipant, calculateRanking, stringSimilarity, teamMatches, reconcileFinishedResults, extractFinishedResults, updateResults, updateGameResult, updatePlayoffResult, playoffTransparency, specialTransparency, adminSpecialBets, recalculateGame, bitrixUserActive, bitrixUserInactive } = require("../server");
 
 test("usa o endereço oficial da rede interna", () => {
   const { APP_BASE_URL } = require("../server");
@@ -13,6 +13,15 @@ test("usa o endereço oficial da rede interna", () => {
 test("valida e-mail", () => {
   assert.equal(validEmail("pessoa@exemplo.com"), true);
   assert.equal(validEmail("invalido"), false);
+});
+
+test("interpreta status ativo e inativo do Bitrix", () => {
+  assert.equal(bitrixUserActive({ ACTIVE:true }), true);
+  assert.equal(bitrixUserActive({ ACTIVE:"Y" }), true);
+  assert.equal(bitrixUserActive({ ACTIVE:"N" }), false);
+  assert.equal(bitrixUserInactive({ ACTIVE:false }), true);
+  assert.equal(bitrixUserInactive({ ACTIVE:"N" }), true);
+  assert.equal(bitrixUserInactive({ ACTIVE:"Y" }), false);
 });
 test("remove palpites iniciados e escolhas invalidas", () => {
   const result = cleanMatchBets({

@@ -709,7 +709,16 @@ function profileFromBitrixUser(user) {
     found: true
   };
 }
-async function listBitrixUsers() {
+function bitrixUserActive(user) {
+  return user?.ACTIVE === true || user?.ACTIVE === "Y" || user?.ACTIVE === "true" || user?.ACTIVE === 1 || user?.ACTIVE === "1";
+}
+function bitrixUserInactive(user) {
+  return user?.ACTIVE === false || user?.ACTIVE === "N" || user?.ACTIVE === "false" || user?.ACTIVE === 0 || user?.ACTIVE === "0";
+}
+function bitrixUserEmployee(user) {
+  return user?.USER_TYPE === "employee";
+}
+async function listBitrixEmployees() {
   const webhook = bitrixWebhookUrl();
   if (!webhook) throw new Error("Configure BITRIX_WEBHOOK_URL ou data/bitrix-config.json no servidor.");
   const users = [];
@@ -720,11 +729,14 @@ async function listBitrixUsers() {
     const response = await fetch(endpoint, { signal: AbortSignal.timeout(10000) });
     if (!response.ok) throw new Error("Bitrix indisponivel.");
     const data = await response.json();
-    users.push(...(data.result || []).filter(user => user.ACTIVE && user.USER_TYPE === "employee" && validEmail(user.EMAIL)));
+    users.push(...(data.result || []).filter(user => bitrixUserEmployee(user) && validEmail(user.EMAIL)));
     if (data.next === undefined) break;
     start = data.next;
   }
   return users;
+}
+async function listBitrixUsers() {
+  return (await listBitrixEmployees()).filter(bitrixUserActive);
 }
 async function syncBitrixUsers() {
   if (bitrixSyncPromise) return bitrixSyncPromise;
@@ -752,6 +764,39 @@ async function syncBitrixUsers() {
     return { synced:true, employees:users.length, total:Object.keys(db).length };
   })().finally(() => { bitrixSyncPromise = null; });
   return bitrixSyncPromise;
+}
+async function pruneInactiveBitrixUsers() {
+  const users = await listBitrixEmployees();
+  const inactiveByEmail = new Map(users.filter(bitrixUserInactive).map(user => [String(user.EMAIL).trim().toLowerCase(), user]));
+  const inactiveById = new Map(users.filter(bitrixUserInactive).map(user => [String(user.ID), user]));
+  const db = readJson(DB_FILE);
+  const removed = [];
+  for (const [email, record] of Object.entries(db)) {
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const inactive = inactiveById.get(String(record.profile?.bitrixId || "")) || inactiveByEmail.get(normalizedEmail);
+    if (!inactive) continue;
+    removed.push({
+      email,
+      bitrixId:String(inactive.ID),
+      name:record.profile?.name || [inactive.NAME, inactive.LAST_NAME].filter(Boolean).join(" ") || email
+    });
+    delete db[email];
+  }
+  let backupFile = null;
+  if (removed.length) {
+    backupFile = path.join(DATA_DIR, `bets.backup-before-inactive-prune-${new Date().toISOString().replace(/[:.]/g, "-")}.json`);
+    fs.copyFileSync(DB_FILE, backupFile);
+    writeDb(db);
+  }
+  return {
+    checked:Object.keys(db).length + removed.length,
+    bitrixEmployees:users.length,
+    inactiveEmployees:inactiveById.size,
+    removed,
+    removedCount:removed.length,
+    remaining:Object.keys(db).length,
+    backupFile
+  };
 }
 async function enrichRanking(rankingData) {
   const ranking = await Promise.all(rankingData.ranking.map(async row => ({ ...row, profile: row.profile || await getBitrixProfile(row.email) })));
@@ -846,6 +891,9 @@ const server=http.createServer(async(req,res)=>{
   if(url.pathname==="/api/sync-bitrix"&&req.method==="POST"){
     try{return send(res,200,await syncBitrixUsers())}catch(error){return send(res,502,{error:error.message})}
   }
+  if(url.pathname==="/api/prune-inactive-bitrix"&&req.method==="POST"){
+    try{return send(res,200,await pruneInactiveBitrixUsers())}catch(error){return send(res,502,{error:error.message})}
+  }
   if(url.pathname==="/api/access-links"){
     const db=readJson(DB_FILE);
     const results=readJson(RESULTS_FILE);
@@ -915,4 +963,4 @@ const server=http.createServer(async(req,res)=>{
   send(res,200,fs.readFileSync(file),MIME[path.extname(file)]||"application/octet-stream");
 });
 if(require.main===module)server.listen(PORT,()=>console.log(`Bolão disponível na porta ${PORT}`));
-module.exports={cleanMatchBets,cleanPlayoffBets,fetchPlayoffGames,validEmail,validToken,createToken,participantPublicId,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,APP_BASE_URL,RESULTS_API_URL,PLAYOFFS_API_URL,setManualResult,setManualPlayoffResult,setExtraPoints,setSpecialResults,specialBetsEnabled,setSpecialBetsEnabled,calculateSpecial,calculatePlayoffs,calculateParticipant,calculateRanking,normalizeTeamName,stringSimilarity,teamMatches,reconcileFinishedResults,reconcileFinishedPlayoffResults,extractFinishedResults,updateResults,updateGameResult,updatePlayoffResult,playoffTransparency,specialTransparency,adminSpecialBets,adminGames,adminPlayoffs,recalculateGame,getBitrixProfile,listBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};
+module.exports={cleanMatchBets,cleanPlayoffBets,fetchPlayoffGames,validEmail,validToken,createToken,participantPublicId,findByToken,ensureAccessTokens,SPECIAL_DEADLINE,APP_BASE_URL,RESULTS_API_URL,PLAYOFFS_API_URL,setManualResult,setManualPlayoffResult,setExtraPoints,setSpecialResults,specialBetsEnabled,setSpecialBetsEnabled,calculateSpecial,calculatePlayoffs,calculateParticipant,calculateRanking,normalizeTeamName,stringSimilarity,teamMatches,reconcileFinishedResults,reconcileFinishedPlayoffResults,extractFinishedResults,updateResults,updateGameResult,updatePlayoffResult,playoffTransparency,specialTransparency,adminSpecialBets,adminGames,adminPlayoffs,recalculateGame,getBitrixProfile,listBitrixEmployees,listBitrixUsers,bitrixUserActive,bitrixUserInactive,pruneInactiveBitrixUsers,syncBitrixUsers,sendBitrixInvite,server};

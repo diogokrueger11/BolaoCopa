@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { cleanMatchBets, cleanPlayoffBets, fetchPlayoffGames, validEmail, validToken, createToken, participantPublicId, findByToken, SPECIAL_DEADLINE, setManualResult, setManualPlayoffResult, specialBetsEnabled, setSpecialBetsEnabled, calculateSpecial, calculatePlayoffs, calculateParticipant, calculateRanking, stringSimilarity, teamMatches, reconcileFinishedResults, extractFinishedResults, updateResults, updateGameResult, updatePlayoffResult, playoffTransparency, specialTransparency, adminSpecialBets, recalculateGame, bitrixUserActive, bitrixUserInactive } = require("../server");
+const { cleanMatchBets, cleanPlayoffBets, fetchPlayoffGames, validEmail, validToken, createToken, participantPublicId, findByToken, SPECIAL_DEADLINE, setManualResult, setManualPlayoffResult, specialBetsEnabled, setSpecialBetsEnabled, calculateSpecial, calculatePlayoffs, calculateParticipant, calculateRanking, stringSimilarity, teamMatches, reconcileFinishedResults, extractFinishedResults, updateResults, updateGameResult, updatePlayoffResult, updatePlayoffResults, playoffTransparency, specialTransparency, adminSpecialBets, recalculateGame, bitrixUserActive, bitrixUserInactive } = require("../server");
 
 test("usa o endereço oficial da rede interna", () => {
   const { APP_BASE_URL } = require("../server");
@@ -246,6 +246,41 @@ test("busca e salva resultado de um playoff com classificado", async () => {
   ]}]}]})});
   assert.deepEqual(await updatePlayoffResult("P-401",fetchImpl,resultsFile,games),{gameId:"P-401",result:{homeScore:1,awayScore:1,advancing:"away"},total:1});
   assert.deepEqual(JSON.parse(fs.readFileSync(resultsFile,"utf8")),{"P-401":{homeScore:1,awayScore:1,advancing:"away"}});
+});
+
+test("resultado automatico de playoff usa placar dos 90 minutos quando ha prorrogacao", async () => {
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),"bolao-playoff-aet-")),resultsFile=path.join(dir,"playoffs.json");
+  fs.writeFileSync(resultsFile,"{}\n");
+  const games=[{id:"P-402",sourceId:"402",home:"Belgica",away:"Senegal",kickoff:"2026-07-01T20:00:00Z"}];
+  const fetchImpl=async()=>({ok:true,json:async()=>({events:[{id:"402",status:{type:{completed:true}},competitions:[{status:{period:4,type:{completed:true,name:"STATUS_FINAL_AET"}},competitors:[
+    {homeAway:"home",score:"3",winner:true,team:{id:"459",displayName:"Belgium"}},
+    {homeAway:"away",score:"2",winner:false,team:{id:"654",displayName:"Senegal"}}
+  ],details:[
+    {scoringPlay:true,shootout:false,clock:{value:1440},team:{id:"654"},scoreValue:1},
+    {scoringPlay:true,shootout:false,clock:{value:3039},team:{id:"654"},scoreValue:1},
+    {scoringPlay:true,shootout:false,clock:{value:5134},team:{id:"459"},scoreValue:1},
+    {scoringPlay:true,shootout:false,clock:{value:5400},team:{id:"459"},scoreValue:1},
+    {scoringPlay:true,shootout:false,clock:{value:7500},team:{id:"459"},scoreValue:1}
+  ]}]}]})});
+  assert.deepEqual(await updatePlayoffResult("P-402",fetchImpl,resultsFile,games),{gameId:"P-402",result:{homeScore:2,awayScore:2,advancing:"home"},total:1});
+});
+
+test("atualizacao em lote dos playoffs grava placar dos 90 minutos", async () => {
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),"bolao-playoff-bulk-")),resultsFile=path.join(dir,"playoffs.json");
+  fs.writeFileSync(resultsFile,"{}\n");
+  const games=[{id:"P-402",sourceId:"402",home:"Belgica",away:"Senegal",kickoff:"2026-07-01T20:00:00Z"}];
+  const fetchImpl=async()=>({ok:true,json:async()=>({events:[{id:"402",status:{type:{completed:true}},competitions:[{status:{period:4,type:{completed:true,name:"STATUS_FINAL_AET"}},competitors:[
+    {homeAway:"home",score:"3",winner:true,team:{id:"459",displayName:"Belgium"}},
+    {homeAway:"away",score:"2",winner:false,team:{id:"654",displayName:"Senegal"}}
+  ],details:[
+    {scoringPlay:true,shootout:false,clock:{value:1440},team:{id:"654"},scoreValue:1},
+    {scoringPlay:true,shootout:false,clock:{value:3039},team:{id:"654"},scoreValue:1},
+    {scoringPlay:true,shootout:false,clock:{value:5134},team:{id:"459"},scoreValue:1},
+    {scoringPlay:true,shootout:false,clock:{value:5400},team:{id:"459"},scoreValue:1},
+    {scoringPlay:true,shootout:false,clock:{value:7500},team:{id:"459"},scoreValue:1}
+  ]}]}]})});
+  assert.deepEqual(await updatePlayoffResults(fetchImpl,resultsFile,games),{fetched:1,changed:1,total:1,unmatched:[],manualRequired:[]});
+  assert.deepEqual(JSON.parse(fs.readFileSync(resultsFile,"utf8")),{"P-402":{homeScore:2,awayScore:2,advancing:"home"}});
 });
 
 test("transparencia de playoff libera apos o inicio", () => {

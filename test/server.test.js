@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { cleanMatchBets, cleanPlayoffBets, fetchPlayoffGames, validEmail, validToken, createToken, participantPublicId, findByToken, SPECIAL_DEADLINE, setManualResult, setManualPlayoffResult, specialBetsEnabled, setSpecialBetsEnabled, calculateSpecial, calculatePlayoffs, calculateParticipant, calculateRanking, stringSimilarity, teamMatches, reconcileFinishedResults, extractFinishedResults, updateResults, updateGameResult, updatePlayoffResult, updatePlayoffResults, playoffTransparency, specialTransparency, adminSpecialBets, recalculateGame, bitrixUserActive, bitrixUserInactive } = require("../server");
+const { cleanMatchBets, cleanPlayoffBets, fetchPlayoffGames, validEmail, validToken, createToken, participantPublicId, findByToken, SPECIAL_DEADLINE, setManualResult, setManualPlayoffResult, specialBetsEnabled, setSpecialBetsEnabled, calculateSpecial, calculatePlayoffs, calculateParticipant, calculateRanking, participantReport, stringSimilarity, teamMatches, reconcileFinishedResults, extractFinishedResults, updateResults, updateGameResult, updatePlayoffResult, updatePlayoffResults, playoffTransparency, specialTransparency, adminSpecialBets, recalculateGame, bitrixUserActive, bitrixUserInactive } = require("../server");
 
 test("usa o endereço oficial da rede interna", () => {
   const { APP_BASE_URL } = require("../server");
@@ -158,6 +158,34 @@ test("recalcula e detalha pontuacao individual", () => {
   assert.equal(result.correct,2);
   assert.equal(result.points,6);
   assert.deepEqual(result.games.map(game=>game.correct),[true,true,false]);
+});
+
+test("relatorio individual separa acertos, erros e jogos sem palpite", () => {
+  const record={
+    accessToken:createToken(),
+    profile:{name:"Ana"},
+    matches:{j1:{pick:"home"},j2:{pick:"away"}},
+    playoffs:{p1:{homeScore:1,awayScore:1,advancing:"home"}},
+    special:{champion:"Brasil",runnerUp:"Portugal",third:"Franca",brazilStage:"Semifinal"}
+  };
+  const report=participantReport(
+    "ana@exemplo.com",
+    record,
+    {j1:"home",j2:"draw",j3:"away"},
+    {champion:"Brasil",runnerUp:"Argentina",third:"Franca",brazilStage:"Quartas de final"},
+    {p1:{homeScore:1,awayScore:1,advancing:"away"}},
+    [
+      {id:"j1",group:"A",home:"Brasil",away:"Marrocos",kickoff:"2026-06-14T19:00:00Z"},
+      {id:"j2",group:"A",home:"Portugal",away:"Espanha",kickoff:"2026-06-15T19:00:00Z"},
+      {id:"j3",group:"A",home:"Franca",away:"Alemanha",kickoff:"2026-06-16T19:00:00Z"}
+    ],
+    [{id:"p1",stage:"Oitavas",home:"Brasil",away:"Argentina",kickoff:"2026-07-01T19:00:00Z"}]
+  );
+  assert.deepEqual(report.groups.games.map(game=>game.status),["correct","wrong","missing"]);
+  assert.deepEqual([report.groups.correct,report.groups.wrong,report.groups.missing],[1,1,1]);
+  assert.equal(report.playoffs.games[0].status,"correct");
+  assert.equal(report.playoffs.games[0].points,4);
+  assert.deepEqual([report.summary.matchPoints,report.summary.playoffPoints,report.summary.specialPoints,report.summary.points],[3,4,15,22]);
 });
 
 test("ranking usa identificador publico sem expor token", () => {
